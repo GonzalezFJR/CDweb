@@ -6,13 +6,54 @@ const toolbarOptions = [
   ['clean'],
 ];
 
-const setMode = (container, quill, textarea, mode) => {
+const setMode = (container, quill, textarea, codeMirror, mode) => {
   if (mode === 'raw') {
-    textarea.value = quill.root.innerHTML;
+    const html = quill.root.innerHTML;
+    if (codeMirror) {
+      codeMirror.setValue(html);
+      codeMirror.refresh();
+    } else {
+      textarea.value = html;
+    }
     container.classList.add('is-raw');
   } else {
-    quill.root.innerHTML = textarea.value || '';
+    const html = codeMirror ? codeMirror.getValue() : textarea.value;
+    quill.root.innerHTML = html || '';
+    textarea.value = html || '';
     container.classList.remove('is-raw');
+  }
+};
+
+const insertHtmlIntoEditor = (container, html) => {
+  const editor = container?.richEditor;
+  if (!editor) {
+    return;
+  }
+  const { quill, textarea, codeMirror } = editor;
+  const toggle = container.querySelector('.rich-editor__toggle-input');
+  const isRaw = toggle?.checked;
+
+  if (isRaw) {
+    if (codeMirror) {
+      const doc = codeMirror.getDoc();
+      doc.replaceSelection(html);
+      codeMirror.focus();
+      textarea.value = codeMirror.getValue();
+    } else if (textarea) {
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      textarea.value = `${textarea.value.slice(0, start)}${html}${textarea.value.slice(end)}`;
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + html.length;
+    }
+    return;
+  }
+
+  if (quill) {
+    const range = quill.getSelection(true);
+    const index = range ? range.index : quill.getLength();
+    quill.clipboard.dangerouslyPasteHTML(index, html);
+    quill.setSelection(index + html.length, 0);
   }
 };
 
@@ -34,11 +75,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     quill.root.innerHTML = textarea.value || '';
-    setMode(container, quill, textarea, 'rich');
+    const codeMirror =
+      window.CodeMirror &&
+      window.CodeMirror.fromTextArea(textarea, {
+        mode: 'htmlmixed',
+        lineNumbers: true,
+        lineWrapping: true,
+        theme: 'material-darker',
+      });
+
+    container.richEditor = {
+      quill,
+      textarea,
+      codeMirror,
+    };
+
+    setMode(container, quill, textarea, codeMirror, 'rich');
 
     if (toggle) {
       toggle.addEventListener('change', () => {
-        setMode(container, quill, textarea, toggle.checked ? 'raw' : 'rich');
+        setMode(container, quill, textarea, codeMirror, toggle.checked ? 'raw' : 'rich');
       });
     }
 
@@ -47,7 +103,116 @@ document.addEventListener('DOMContentLoaded', () => {
       form.addEventListener('submit', () => {
         if (!toggle || !toggle.checked) {
           textarea.value = quill.root.innerHTML;
+        } else if (codeMirror) {
+          textarea.value = codeMirror.getValue();
         }
+      });
+    }
+  });
+
+  document.querySelectorAll('[data-image-gallery]').forEach((gallery) => {
+    const scope = gallery.dataset.imageScope;
+    const toggleButton = gallery.querySelector('[data-gallery-toggle]');
+    const panel = gallery.querySelector('.image-gallery__panel');
+    const grid = gallery.querySelector('[data-gallery-grid]');
+    const uploadInput = gallery.querySelector('[data-gallery-upload]');
+    const insertButton = gallery.querySelector('[data-gallery-insert]');
+    const selected = new Set();
+    let loaded = false;
+
+    const updateInsertState = () => {
+      if (insertButton) {
+        insertButton.disabled = selected.size === 0;
+      }
+    };
+
+    const renderImages = (images) => {
+      if (!grid) {
+        return;
+      }
+      grid.innerHTML = '';
+      images.forEach((url) => {
+        const item = document.createElement('div');
+        item.className = 'image-gallery__item';
+        item.dataset.url = url;
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'Imagen disponible';
+        item.appendChild(img);
+        item.addEventListener('click', () => {
+          if (selected.has(url)) {
+            selected.delete(url);
+            item.classList.remove('is-selected');
+          } else {
+            selected.add(url);
+            item.classList.add('is-selected');
+          }
+          updateInsertState();
+        });
+        grid.appendChild(item);
+      });
+    };
+
+    const loadImages = async () => {
+      if (!scope) {
+        return;
+      }
+      const response = await fetch(`/media/${scope}/list`);
+      if (!response.ok) {
+        return;
+      }
+      const payload = await response.json();
+      renderImages(payload.images || []);
+      loaded = true;
+    };
+
+    if (toggleButton && panel) {
+      toggleButton.addEventListener('click', async () => {
+        panel.hidden = !panel.hidden;
+        if (!panel.hidden && !loaded) {
+          await loadImages();
+        }
+      });
+    }
+
+    if (uploadInput) {
+      uploadInput.addEventListener('change', async () => {
+        if (!uploadInput.files?.length || !scope) {
+          return;
+        }
+        const formData = new FormData();
+        Array.from(uploadInput.files).forEach((file) => {
+          formData.append('files', file);
+        });
+        const response = await fetch(`/media/${scope}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) {
+          return;
+        }
+        const payload = await response.json();
+        await renderImages(payload.images || []);
+        selected.clear();
+        updateInsertState();
+        uploadInput.value = '';
+      });
+    }
+
+    if (insertButton) {
+      insertButton.addEventListener('click', () => {
+        const urls = Array.from(selected);
+        if (urls.length === 0) {
+          return;
+        }
+        const html = urls.map((url) => `<p><img src="${url}" alt="" /></p>`).join('\n');
+        const editor = gallery.closest('form')?.querySelector('[data-rich-editor]');
+        insertHtmlIntoEditor(editor, html);
+        selected.clear();
+        grid?.querySelectorAll('.image-gallery__item').forEach((item) => {
+          item.classList.remove('is-selected');
+        });
+        updateInsertState();
       });
     }
   });
