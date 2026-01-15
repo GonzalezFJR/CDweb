@@ -58,8 +58,21 @@ const setupRegisterToggle = () => {
   });
 };
 
+const setupAstrofotoUploadToggle = () => {
+  const trigger = document.querySelector("[data-toggle='astrofoto-upload']");
+  const form = document.getElementById("astrofoto-upload");
+  if (!trigger || !form) return;
+  trigger.addEventListener("click", () => {
+    form.classList.toggle("hidden");
+    if (!form.classList.contains("hidden")) {
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
+};
+
 setupSlider(document.querySelector(".hero-slider"));
 setupImageSwap(document.querySelector(".mini-slider"));
 setupNavToggle();
 setupRegisterToggle();
+setupAstrofotoUploadToggle();
 observeReveal();

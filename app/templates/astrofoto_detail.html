@@ -9,10 +9,16 @@
       <ul>
         <li><strong>Autor:</strong> {{ photo.author }}</li>
         <li><strong>Fecha de subida:</strong> {{ photo.uploaded_at }}</li>
-        <li><strong>Tiempo de exposición:</strong> {{ photo.exposure_time }}</li>
+        {% if photo.characteristics or photo.exposure_time %}
+        <li><strong>Características:</strong> {{ photo.characteristics or photo.exposure_time }}</li>
+        {% endif %}
+        {% if photo.equipment %}
         <li><strong>Equipo:</strong> {{ photo.equipment }}</li>
+        {% endif %}
       </ul>
+      {% if photo.description %}
       <p>{{ photo.description }}</p>
+      {% endif %}
       <a class="button ghost" href="{{ photo.image_url }}" target="_blank">Ver en tamaño completo</a>
     </div>
   </div>

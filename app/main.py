@@ -67,6 +67,43 @@ def _serialize_doc(document: dict[str, Any]) -> dict[str, Any]:
     return document
 
 
+def _user_display_name(user: dict | None) -> str:
+    if not user:
+        return ""
+    return user.get("full_name") or user.get("email", "")
+
+
+def _normalized_equipment_list(user: dict | None) -> list[dict[str, str]]:
+    equipment = []
+    if user:
+        equipment = user.get("equipment", [])
+    normalized = []
+    for item in equipment:
+        if isinstance(item, dict):
+            label = item.get("label")
+            item_id = item.get("id")
+        else:
+            label = str(item)
+            item_id = f"eq-{label}"
+        if label:
+            normalized.append({"id": item_id or label, "label": label})
+    return normalized
+
+
+async def _ensure_user_profile(user: dict) -> dict[str, Any]:
+    profile = await db.users.find_one({"email": user["email"]})
+    if not profile:
+        profile = {
+            "email": user["email"],
+            "full_name": "",
+            "location": "",
+            "bio": "",
+            "equipment": [],
+            "is_admin": bool(user.get("is_admin")),
+        }
+    return profile
+
+
 @app.get("/")
 async def index(request: Request) -> Any:
     context = {
@@ -131,9 +168,17 @@ async def associate_submit(
 @app.get("/astrofotos")
 async def astrofotos(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
     photos = await _fetch_recent_photos(limit=50)
+    equipment_options = _normalized_equipment_list(user)
+    author_default = _user_display_name(user)
     return templates.TemplateResponse(
         "astrofotos.html",
-        {"request": request, "photos": photos, "user": user},
+        {
+            "request": request,
+            "photos": photos,
+            "user": user,
+            "equipment_options": equipment_options,
+            "author_default": author_default,
+        },
     )
 
 
@@ -152,10 +197,10 @@ async def astrofoto_detail(request: Request, photo_id: str) -> Any:
 async def astrofotos_upload(
     request: Request,
     name: str = Form(...),
-    exposure_time: str = Form(...),
-    equipment: str = Form(...),
-    description: str = Form(...),
-    author: str = Form(...),
+    characteristics: str | None = Form(None),
+    equipment: str | None = Form(None),
+    description: str | None = Form(None),
+    author: str | None = Form(None),
     photo_file: UploadFile = Form(...),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
@@ -163,16 +208,20 @@ async def astrofotos_upload(
         raise HTTPException(status_code=403)
     filename = f"{datetime.utcnow().timestamp()}_{photo_file.filename}"
     file_path = STATIC_DIR / "store" / "pics" / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     contents = await photo_file.read()
     file_path.write_bytes(contents)
+    author_value = author.strip() if author else ""
+    if not author_value:
+        author_value = _user_display_name(user)
     payload = {
         "_id": filename,
         "name": name,
         "uploaded_at": datetime.utcnow(),
-        "exposure_time": exposure_time,
-        "equipment": equipment,
-        "description": description,
-        "author": author,
+        "characteristics": (characteristics or "").strip(),
+        "equipment": (equipment or "").strip(),
+        "description": (description or "").strip(),
+        "author": author_value,
         "image_url": f"/static/store/pics/{filename}",
     }
     await db.photos.insert_one(payload)
@@ -223,6 +272,7 @@ async def blog_new_submit(
     if image and image.filename:
         filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
         file_path = STATIC_DIR / "store" / "blog" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_bytes(await image.read())
         image_url = f"/static/store/blog/{filename}"
     entry_id = f"entry-{datetime.utcnow().timestamp()}"
@@ -251,6 +301,80 @@ async def blog_detail(request: Request, entry_id: str) -> Any:
 @app.get("/contacto")
 async def contact(request: Request) -> Any:
     return templates.TemplateResponse("contact.html", {"request": request})
+
+
+@app.get("/perfil")
+async def profile(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    profile_data = await _ensure_user_profile(user)
+    profile_data["equipment"] = _normalized_equipment_list(profile_data)
+    return templates.TemplateResponse(
+        "profile.html",
+        {"request": request, "user": user, "profile": profile_data},
+    )
+
+
+@app.post("/perfil")
+async def profile_update(
+    request: Request,
+    full_name: str = Form(""),
+    location: str = Form(""),
+    bio: str = Form(""),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    await db.users.update_one(
+        {"email": user["email"]},
+        {
+            "$set": {
+                "full_name": full_name.strip(),
+                "location": location.strip(),
+                "bio": bio.strip(),
+            },
+            "$setOnInsert": {"is_admin": bool(user.get("is_admin"))},
+        },
+        upsert=True,
+    )
+    return RedirectResponse("/perfil", status_code=303)
+
+
+@app.post("/perfil/equipos")
+async def profile_add_equipment(
+    request: Request,
+    equipment_label: str = Form(...),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    label = equipment_label.strip()
+    if not label:
+        return RedirectResponse("/perfil", status_code=303)
+    equipment_entry = {"id": f"eq-{datetime.utcnow().timestamp()}", "label": label}
+    await db.users.update_one(
+        {"email": user["email"]},
+        {
+            "$push": {"equipment": equipment_entry},
+            "$setOnInsert": {"is_admin": bool(user.get("is_admin"))},
+        },
+        upsert=True,
+    )
+    return RedirectResponse("/perfil", status_code=303)
+
+
+@app.post("/perfil/equipos/{equipment_id}/eliminar")
+async def profile_delete_equipment(
+    equipment_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    await db.users.update_one(
+        {"email": user["email"]},
+        {"$pull": {"equipment": {"id": equipment_id}}},
+    )
+    return RedirectResponse("/perfil", status_code=303)
 
 
 @app.post("/contacto")
