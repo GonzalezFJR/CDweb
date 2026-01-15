@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <div class="section-header">
+    <h1>Blog</h1>
+    {% if user %}
+    <a class="button" href="/blog/nueva">Nueva entrada</a>
+    {% endif %}
+  </div>
+  <div class="cards">
+    {% for entry in latest_entries %}
+    <article class="card">
+      {% if entry.image_url %}
+      <img src="{{ entry.image_url }}" alt="{{ entry.title }}" />
+      {% endif %}
+      <div class="card-content">
+        <h3>{{ entry.title }}</h3>
+        <p>{{ entry.summary }}</p>
+        <a class="button ghost" href="/blog/{{ entry._id }}">Ver más</a>
+      </div>
+    </article>
+    {% else %}
+    {% for _ in range(3) %}
+    <article class="card placeholder-card">
+      <div class="placeholder-thumb"></div>
+      <div class="card-content">
+        <h3>Próximamente</h3>
+        <p>Compartiremos noticias y actividades muy pronto.</p>
+      </div>
+    </article>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section container reveal">
+  <h2>Entradas pasadas</h2>
+  <div class="blog-list">
+    {% for entry in entries %}
+    <article class="blog-item">
+      <div>
+        <h3>{{ entry.title }}</h3>
+        <p>{{ entry.summary }}</p>
+      </div>
+      <a class="button ghost" href="/blog/{{ entry._id }}">Ver entrada</a>
+    </article>
+    {% else %}
+    {% for _ in range(5) %}
+    <article class="blog-item placeholder-card">
+      <div>
+        <h3>Entrada en preparación</h3>
+        <p>Estamos redactando nuevas publicaciones para la comunidad.</p>
+      </div>
+      <span class="muted">Muy pronto</span>
+    </article>
+    {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="pagination">
+    {% if page > 1 %}
+    <a class="button ghost" href="/blog?page={{ page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page }} de {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a class="button ghost" href="/blog?page={{ page + 1 }}">Siguiente</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

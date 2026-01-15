@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <div class="photo-detail">
+    <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
+    <div class="photo-meta">
+      <h1>{{ photo.name }}</h1>
+      <ul>
+        <li><strong>Autor:</strong> {{ photo.author }}</li>
+        <li><strong>Fecha de subida:</strong> {{ photo.uploaded_at }}</li>
+        <li><strong>Tiempo de exposición:</strong> {{ photo.exposure_time }}</li>
+        <li><strong>Equipo:</strong> {{ photo.equipment }}</li>
+      </ul>
+      <p>{{ photo.description }}</p>
+      <a class="button ghost" href="{{ photo.image_url }}" target="_blank">Ver en tamaño completo</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

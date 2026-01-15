@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cielos Despejados</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <script defer src="/static/js/main.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a class="logo" href="/">
+        <span class="logo-mark">☄️</span>
+        Cielos Despejados
+      </a>
+      <div class="nav-links">
+        <a href="/astrofotos">Astrofotos</a>
+        <a href="/sobre-nosotros">Sobre nosotros</a>
+        <a href="/blog">Blog</a>
+        <a href="/contacto">Contacto</a>
+        <a href="/asociate" class="cta">Asóciate</a>
+        {% if request.session.get('user_email') %}
+        <a href="/logout">Logout</a>
+        {% else %}
+        <a href="/login">Login</a>
+        {% endif %}
+      </div>
+      <button class="nav-toggle" aria-label="Abrir menú">☰</button>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2024 Asociación Cielos Despejados · Observando el cosmos juntos.</p>
+    </div>
+  </footer>
+</body>
+</html>
