@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Mi perfil</h1>
+  <p class="muted">Aquí puedes actualizar tus datos y gestionar tu equipo habitual.</p>
+  <div class="profile-grid">
+    <div class="card">
+      <div class="card-content">
+        <h2>Datos de usuario</h2>
+        <form class="form" method="post" action="/perfil">
+          <label>Nombre
+            <input type="text" name="full_name" value="{{ profile.full_name }}" />
+          </label>
+          <label>Ubicación
+            <input type="text" name="location" value="{{ profile.location }}" />
+          </label>
+          <label>Descripción
+            <textarea name="bio" rows="3">{{ profile.bio }}</textarea>
+          </label>
+          <button class="button" type="submit">Guardar cambios</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-content">
+        <h2>Equipo de observación</h2>
+        <p class="muted">
+          Añade tu equipo habitual de observación o astrofotografía con las características.
+        </p>
+        <form class="form" method="post" action="/perfil/equipos">
+          <label>Nuevo equipo
+            <input type="text" name="equipment_label" placeholder="Telescopio, cámara, montura..." required />
+          </label>
+          <button class="button" type="submit">Añadir equipo</button>
+        </form>
+
+        <div class="equipment-list">
+          {% if profile.equipment %}
+          {% for item in profile.equipment %}
+          <div class="equipment-item">
+            <span>{{ item.label }}</span>
+            <form method="post" action="/perfil/equipos/{{ item.id }}/eliminar">
+              <button class="button ghost" type="submit">Eliminar</button>
+            </form>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="muted">Aún no has registrado equipos.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

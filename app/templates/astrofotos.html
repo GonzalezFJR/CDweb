@@ -28,28 +28,44 @@
 
 {% if user %}
 <section class="section container reveal">
-  <h2>Subir nueva astrofoto</h2>
-  <form class="form" method="post" enctype="multipart/form-data">
-    <label>Nombre
-      <input type="text" name="name" required />
-    </label>
-    <label>Tiempo de exposición
-      <input type="text" name="exposure_time" required />
-    </label>
-    <label>Equipo usado
-      <input type="text" name="equipment" required />
-    </label>
-    <label>Descripción
-      <textarea name="description" rows="3" required></textarea>
-    </label>
-    <label>Autor
-      <input type="text" name="author" required />
-    </label>
-    <label>Archivo de imagen
-      <input type="file" name="photo_file" accept="image/*" required />
-    </label>
-    <button class="button" type="submit">Subir foto</button>
-  </form>
+  <div class="section-header">
+    <h2>Subir nuevas imágenes</h2>
+    <button class="button ghost" type="button" data-toggle="astrofoto-upload">Subir nuevas imágenes</button>
+  </div>
+  <div id="astrofoto-upload" class="card hidden">
+    <div class="card-content">
+      <p class="muted">Completa los datos y comparte tu última captura con la comunidad.</p>
+      <form class="form" method="post" enctype="multipart/form-data">
+        <label>Nombre
+          <input type="text" name="name" required />
+        </label>
+        <label>Características
+          <input type="text" name="characteristics" />
+          <span class="muted">Tiempo de exposición, filtros...</span>
+        </label>
+        <label>Equipo usado
+          <input type="text" name="equipment" list="equipment-options" />
+        </label>
+        {% if equipment_options %}
+        <datalist id="equipment-options">
+          {% for item in equipment_options %}
+          <option value="{{ item.label }}"></option>
+          {% endfor %}
+        </datalist>
+        {% endif %}
+        <label>Descripción
+          <textarea name="description" rows="3"></textarea>
+        </label>
+        <label>Autor
+          <input type="text" name="author" value="{{ author_default }}" required />
+        </label>
+        <label>Archivo de imagen
+          <input type="file" name="photo_file" accept="image/*" required />
+        </label>
+        <button class="button" type="submit">Subir foto</button>
+      </form>
+    </div>
+  </div>
 </section>
 {% endif %}
 {% endblock %}
