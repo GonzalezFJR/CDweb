@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Solicitudes de registro</h1>
+  <div class="table">
+    <div class="table-row table-header">
+      <span>Email</span>
+      <span>Acciones</span>
+    </div>
+    {% for req in requests %}
+    <div class="table-row">
+      <span>{{ req.email }}</span>
+      <span class="actions">
+        <form method="post" action="/admin/solicitudes/{{ req._id }}/aprobar">
+          <button class="button ghost" type="submit">Aprobar</button>
+        </form>
+        <form method="post" action="/admin/solicitudes/{{ req._id }}/eliminar">
+          <button class="button ghost" type="submit">Eliminar</button>
+        </form>
+      </span>
+    </div>
+    {% else %}
+    <p class="muted">No hay solicitudes pendientes.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

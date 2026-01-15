@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Astrofotos</h1>
+  <div class="photo-grid">
+    {% for photo in photos %}
+    <a class="photo-card" href="/astrofotos/{{ photo._id }}">
+      <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
+      <div class="photo-info">
+        <h3>{{ photo.name }}</h3>
+        <p>{{ photo.author }}</p>
+      </div>
+    </a>
+    {% else %}
+    {% for _ in range(6) %}
+    <div class="photo-card placeholder-card">
+      <div class="placeholder-thumb"></div>
+      <div class="photo-info">
+        <h3>Astrofoto en preparación</h3>
+        <p>Pronto tendremos nuevas imágenes.</p>
+      </div>
+    </div>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</section>
+
+{% if user %}
+<section class="section container reveal">
+  <h2>Subir nueva astrofoto</h2>
+  <form class="form" method="post" enctype="multipart/form-data">
+    <label>Nombre
+      <input type="text" name="name" required />
+    </label>
+    <label>Tiempo de exposición
+      <input type="text" name="exposure_time" required />
+    </label>
+    <label>Equipo usado
+      <input type="text" name="equipment" required />
+    </label>
+    <label>Descripción
+      <textarea name="description" rows="3" required></textarea>
+    </label>
+    <label>Autor
+      <input type="text" name="author" required />
+    </label>
+    <label>Archivo de imagen
+      <input type="file" name="photo_file" accept="image/*" required />
+    </label>
+    <button class="button" type="submit">Subir foto</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

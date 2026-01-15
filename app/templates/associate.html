@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Asóciate</h1>
+  <p>Rellena el formulario y nos pondremos en contacto contigo.</p>
+  {% if success %}
+  <div class="alert success">Solicitud enviada correctamente. ¡Gracias por tu interés!</div>
+  {% endif %}
+  <form class="form" method="post">
+    <label>Nombre y apellidos
+      <input type="text" name="full_name" required />
+    </label>
+    <label>Email
+      <input type="email" name="email" required />
+    </label>
+    <label>Teléfono
+      <input type="tel" name="phone" required />
+    </label>
+    <label>¿Dónde vives?
+      <input type="text" name="city" required />
+    </label>
+    <label>¿Qué te gusta más de la astronomía?
+      <textarea name="favorite" rows="3" required></textarea>
+    </label>
+    <label>¿Tienes telescopio?
+      <select name="has_telescope" required>
+        <option value="Sí">Sí</option>
+        <option value="No">No</option>
+      </select>
+    </label>
+    <label>¿Sabes de astrofotografía o te gustaría aprender?
+      <textarea name="astro_experience" rows="3" required></textarea>
+    </label>
+    <button class="button" type="submit">Enviar solicitud</button>
+  </form>
+  <div class="info-card">
+    <p>
+      Para unirte a la asociación debes abonar la cuota anual de 15€ y enviar el justificante de
+      pago a <strong>{{ contact_email }}</strong>.
+    </p>
+  </div>
+</section>
+{% endblock %}

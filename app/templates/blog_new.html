@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Nueva entrada</h1>
+  <p>Puedes añadir HTML en el contenido para dar formato. Las imágenes se subirán a /static/store/blog/.</p>
+  <form class="form" method="post" enctype="multipart/form-data">
+    <label>Título
+      <input type="text" name="title" required />
+    </label>
+    <label>Resumen
+      <textarea name="summary" rows="3" required></textarea>
+    </label>
+    <label>Contenido (HTML)
+      <textarea name="content_html" rows="10" required></textarea>
+    </label>
+    <label>Imagen principal
+      <input type="file" name="image" accept="image/*" />
+    </label>
+    <button class="button" type="submit">Publicar entrada</button>
+  </form>
+</section>
+{% endblock %}
