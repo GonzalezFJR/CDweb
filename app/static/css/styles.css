@@ -271,17 +271,61 @@ img {
   gap: 0.75rem;
 }
 
-.rich-editor__controls {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.rich-editor__toggle {
+.rich-editor__header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rich-editor__label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rich-editor__switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
   color: var(--muted);
+}
+
+.rich-editor__toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rich-editor__switch-slider {
+  width: 42px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.rich-editor__switch-slider::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.rich-editor__toggle-input:checked + .rich-editor__switch-slider {
+  background: rgba(246, 178, 107, 0.6);
+}
+
+.rich-editor__toggle-input:checked + .rich-editor__switch-slider::after {
+  transform: translateX(20px);
+  background: var(--surface);
 }
 
 .rich-editor__quill .ql-toolbar {
@@ -291,7 +335,7 @@ img {
 }
 
 .rich-editor__quill .ql-container {
-  min-height: 220px;
+  min-height: 320px;
   border-radius: 0 0 12px 12px;
   border-color: rgba(255, 255, 255, 0.1);
   background: var(--surface);
@@ -300,10 +344,12 @@ img {
 
 .rich-editor__quill .ql-editor {
   font-family: inherit;
+  min-height: 300px;
 }
 
 .rich-editor__textarea {
   display: none;
+  min-height: 320px;
 }
 
 .rich-editor.is-raw .rich-editor__textarea {
@@ -312,6 +358,72 @@ img {
 
 .rich-editor.is-raw .rich-editor__quill {
   display: none;
+}
+
+.rich-editor .CodeMirror {
+  display: none;
+  min-height: 320px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.95rem;
+}
+
+.rich-editor.is-raw .CodeMirror {
+  display: block;
+}
+
+.image-gallery {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.image-gallery__panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(6, 17, 33, 0.65);
+}
+
+.image-gallery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-gallery__grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.image-gallery__item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.image-gallery__item img {
+  display: block;
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+}
+
+.image-gallery__item.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 6px 16px rgba(246, 178, 107, 0.2);
+}
+
+.button.small {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
 }
 
 input,

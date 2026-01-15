@@ -2,6 +2,8 @@
 
 {% block extra_head %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css" />
 {% endblock %}
 
 {% block content %}
@@ -15,21 +17,34 @@
     <label>Resumen
       <textarea name="summary" rows="3" required></textarea>
     </label>
-    <label>Contenido
-      <div class="rich-editor" data-rich-editor>
-        <div class="rich-editor__controls">
-          <label class="rich-editor__toggle">
-            <input type="checkbox" class="rich-editor__toggle-input" />
-            <span>Editar HTML sin formato</span>
-          </label>
-        </div>
-        <div class="rich-editor__quill" data-rich-editor-quill></div>
-        <textarea class="rich-editor__textarea" name="content_html" rows="10" required></textarea>
+    <div class="rich-editor" data-rich-editor>
+      <div class="rich-editor__header">
+        <span class="rich-editor__label">Contenido</span>
+        <label class="rich-editor__switch">
+          <input type="checkbox" class="rich-editor__toggle-input" />
+          <span class="rich-editor__switch-slider"></span>
+          <span class="rich-editor__switch-text">Editar HTML sin formato</span>
+        </label>
       </div>
-    </label>
+      <div class="rich-editor__quill" data-rich-editor-quill></div>
+      <textarea class="rich-editor__textarea" name="content_html" rows="12" required></textarea>
+    </div>
     <label>Imagen principal
       <input type="file" name="image" accept="image/*" />
     </label>
+    <div class="image-gallery" data-image-gallery data-image-scope="activities">
+      <button class="button ghost small" type="button" data-gallery-toggle>Agregar otras imágenes</button>
+      <div class="image-gallery__panel" hidden>
+        <div class="image-gallery__actions">
+          <label class="button ghost small">
+            Subir imágenes
+            <input type="file" accept="image/*" multiple data-gallery-upload hidden />
+          </label>
+          <button class="button" type="button" data-gallery-insert disabled>Agregar imagen a contenido</button>
+        </div>
+        <div class="image-gallery__grid" data-gallery-grid></div>
+      </div>
+    </div>
     <button class="button" type="submit">Publicar noticia</button>
   </form>
 </section>
@@ -37,5 +52,10 @@
 
 {% block extra_scripts %}
   <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
   <script defer src="/static/js/rich_text.js"></script>
 {% endblock %}

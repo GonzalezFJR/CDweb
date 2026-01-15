@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -50,6 +50,25 @@ def _list_home_images() -> list[str]:
     if not home_dir.exists():
         return []
     return [f"/static/pics/home/{path.name}" for path in home_dir.iterdir() if path.is_file()]
+
+
+def _store_images_dir(scope: str) -> Path:
+    if scope not in {"blog", "activities"}:
+        raise HTTPException(status_code=404)
+    return STATIC_DIR / "store" / scope
+
+
+def _list_store_images(scope: str) -> list[str]:
+    directory = _store_images_dir(scope)
+    if not directory.exists():
+        return []
+    return sorted(
+        [
+            f"/static/store/{scope}/{path.name}"
+            for path in directory.iterdir()
+            if path.is_file()
+        ]
+    )
 
 
 async def _fetch_recent_photos(limit: int = 6) -> list[dict[str, Any]]:
@@ -261,6 +280,32 @@ async def blog_new(request: Request, user: dict | None = Depends(get_current_use
     if not user:
         raise HTTPException(status_code=403)
     return templates.TemplateResponse("blog_new.html", {"request": request, "user": user})
+
+
+@app.get("/media/{scope}/list")
+async def media_list(scope: str, user: dict | None = Depends(get_current_user)) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    return {"images": _list_store_images(scope)}
+
+
+@app.post("/media/{scope}/upload")
+async def media_upload(
+    scope: str,
+    files: list[UploadFile] = File(...),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    directory = _store_images_dir(scope)
+    directory.mkdir(parents=True, exist_ok=True)
+    for image in files:
+        if not image.filename:
+            continue
+        filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
+        file_path = directory / filename
+        file_path.write_bytes(await image.read())
+    return {"images": _list_store_images(scope)}
 
 
 @app.post("/blog/nueva")
