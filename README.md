@@ -15,6 +15,7 @@ Copia el archivo `.env.example` a `.env` y ajusta los valores:
 - `SECRET_KEY`: clave para sesiones.
 - `CONTACT_EMAIL`: correo destino para formularios.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`: credenciales SMTP para envío de emails.
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`: credenciales del administrador que puede acceder al panel de gestión.
 
 ## Puesta en marcha con Docker
 
@@ -41,4 +42,12 @@ El servicio de MongoDB se inicia automáticamente en un contenedor con un volume
 
 - Las imágenes del banner principal deben colocarse en `app/static/pics/home/`.
 - Los metadatos de astrofotos y entradas de blog se guardan en MongoDB.
-- Para convertir un usuario en administrador, actualiza el campo `is_admin` a `true` en la colección `users`.
+- Para convertir un usuario en administrador, actualiza el campo `is_admin` a `true` en la colección `users` o usa las variables `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
+
+## Scripts
+
+Para crear un usuario manualmente en MongoDB:
+
+```bash
+python scripts/add_user_mongo.py my_user_name my_secret_password --email a_email@gmail.com
+```

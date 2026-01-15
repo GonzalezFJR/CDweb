@@ -13,6 +13,8 @@ class Settings:
     smtp_user: str = os.getenv("SMTP_USER", "")
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
     smtp_from: str = os.getenv("SMTP_FROM", "noreply@cielosdespejados.es")
+    admin_email: str = os.getenv("ADMIN_EMAIL", "")
+    admin_password: str = os.getenv("ADMIN_PASSWORD", "")
 
 
 settings = Settings()

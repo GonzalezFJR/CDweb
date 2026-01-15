@@ -34,6 +34,8 @@ async def get_current_user(request: Request) -> dict | None:
     user_email = request.session.get("user_email")
     if not user_email:
         return None
+    if settings.admin_email and user_email == settings.admin_email:
+        return {"email": user_email, "is_admin": True}
     return await db.users.find_one({"email": user_email})
 
 
@@ -284,6 +286,7 @@ async def login_submit(
             {"request": request, "error": "Credenciales inválidas."},
         )
     request.session["user_email"] = user["email"]
+    request.session["is_admin"] = bool(user.get("is_admin"))
     return RedirectResponse("/", status_code=303)
 
 

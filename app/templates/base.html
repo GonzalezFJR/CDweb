@@ -20,6 +20,9 @@
         <a href="/blog">Blog</a>
         <a href="/contacto">Contacto</a>
         <a href="/asociate" class="cta">Asóciate</a>
+        {% if request.session.get('is_admin') %}
+        <a href="/admin/solicitudes">Gestión de usuarios</a>
+        {% endif %}
         {% if request.session.get('user_email') %}
         <a href="/logout">Logout</a>
         {% else %}
