@@ -266,6 +266,54 @@ img {
   color: var(--muted);
 }
 
+.rich-editor {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rich-editor__controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rich-editor__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.rich-editor__quill .ql-toolbar {
+  border-radius: 12px 12px 0 0;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(6, 17, 33, 0.9);
+}
+
+.rich-editor__quill .ql-container {
+  min-height: 220px;
+  border-radius: 0 0 12px 12px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.rich-editor__quill .ql-editor {
+  font-family: inherit;
+}
+
+.rich-editor__textarea {
+  display: none;
+}
+
+.rich-editor.is-raw .rich-editor__textarea {
+  display: block;
+}
+
+.rich-editor.is-raw .rich-editor__quill {
+  display: none;
+}
+
 input,
 textarea,
 select {
