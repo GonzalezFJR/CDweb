@@ -62,6 +62,11 @@ async def _fetch_recent_blog_entries(limit: int = 3) -> list[dict[str, Any]]:
     return [_serialize_doc(entry) async for entry in cursor]
 
 
+async def _fetch_recent_activities(limit: int = 3) -> list[dict[str, Any]]:
+    cursor = db.activities.find().sort("published_at", -1).limit(limit)
+    return [_serialize_doc(activity) async for activity in cursor]
+
+
 def _serialize_doc(document: dict[str, Any]) -> dict[str, Any]:
     document["_id"] = str(document.get("_id"))
     return document
@@ -110,6 +115,7 @@ async def index(request: Request) -> Any:
         "request": request,
         "home_images": _list_home_images(),
         "photos": await _fetch_recent_photos(),
+        "activities": await _fetch_recent_activities(),
         "blog_entries": await _fetch_recent_blog_entries(),
     }
     return templates.TemplateResponse("index.html", context)
@@ -295,6 +301,83 @@ async def blog_detail(request: Request, entry_id: str) -> Any:
         raise HTTPException(status_code=404)
     return templates.TemplateResponse(
         "blog_detail.html", {"request": request, "entry": _serialize_doc(entry)}
+    )
+
+
+@app.get("/actividades")
+async def activities(
+    request: Request,
+    page: int = 1,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    per_page = 5
+    skip = (page - 1) * per_page
+    activities_cursor = (
+        db.activities.find().sort("published_at", -1).skip(skip).limit(per_page)
+    )
+    activity_entries = [_serialize_doc(activity) async for activity in activities_cursor]
+    total_entries = await db.activities.count_documents({})
+    total_pages = max(1, (total_entries + per_page - 1) // per_page)
+    latest_entries = await _fetch_recent_activities(limit=3)
+    return templates.TemplateResponse(
+        "activities.html",
+        {
+            "request": request,
+            "entries": activity_entries,
+            "latest_entries": latest_entries,
+            "page": page,
+            "total_pages": total_pages,
+            "user": user,
+        },
+    )
+
+
+@app.get("/actividades/nueva")
+async def activities_new(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    return templates.TemplateResponse("activities_new.html", {"request": request, "user": user})
+
+
+@app.post("/actividades/nueva")
+async def activities_new_submit(
+    request: Request,
+    title: str = Form(...),
+    summary: str = Form(...),
+    content_html: str = Form(...),
+    image: UploadFile | None = Form(None),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    image_url = ""
+    if image and image.filename:
+        filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
+        file_path = STATIC_DIR / "store" / "activities" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(await image.read())
+        image_url = f"/static/store/activities/{filename}"
+    entry_id = f"activity-{datetime.utcnow().timestamp()}"
+    payload = {
+        "_id": entry_id,
+        "title": title,
+        "summary": summary,
+        "content_html": content_html,
+        "image_url": image_url,
+        "published_at": datetime.utcnow(),
+    }
+    await db.activities.insert_one(payload)
+    return RedirectResponse("/actividades", status_code=303)
+
+
+@app.get("/actividades/{activity_id}")
+async def activities_detail(request: Request, activity_id: str) -> Any:
+    activity = await db.activities.find_one({"_id": activity_id})
+    if not activity:
+        raise HTTPException(status_code=404)
+    return templates.TemplateResponse(
+        "activities_detail.html",
+        {"request": request, "activity": _serialize_doc(activity)},
     )
 
 

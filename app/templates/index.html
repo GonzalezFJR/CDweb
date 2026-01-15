@@ -36,7 +36,41 @@
 
 <section class="section container reveal">
   <div class="section-text">
-    <h2>Últimas noticias</h2>
+    <h2>Últimas actividades</h2>
+    <p>
+      Descubre nuestras próximas observaciones, talleres y encuentros de la asociación.
+    </p>
+  </div>
+  <div class="cards">
+    {% for activity in activities %}
+    <article class="card">
+      {% if activity.image_url %}
+      <img src="{{ activity.image_url }}" alt="{{ activity.title }}" />
+      {% endif %}
+      <div class="card-content">
+        <h3>{{ activity.title }}</h3>
+        <p>{{ activity.summary }}</p>
+        <a class="button ghost" href="/actividades/{{ activity._id }}">Ver más</a>
+      </div>
+    </article>
+    {% else %}
+    {% for _ in range(3) %}
+    <article class="card placeholder-card">
+      <div class="placeholder-thumb"></div>
+      <div class="card-content">
+        <h3>Actividad en preparación</h3>
+        <p>Muy pronto compartiremos salidas, talleres y nuevas observaciones.</p>
+      </div>
+    </article>
+    {% endfor %}
+    {% endfor %}
+  </div>
+  <a class="button" href="/actividades">Ver todas las actividades</a>
+</section>
+
+<section class="section container reveal">
+  <div class="section-text">
+    <h2>Nuestro blog</h2>
     <p>
       Descubre nuestras actividades, talleres y salidas astronómicas en el blog de la asociación.
     </p>

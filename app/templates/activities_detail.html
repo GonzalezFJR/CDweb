@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <article class="blog-detail">
+    <h1>{{ activity.title }}</h1>
+    {% if activity.image_url %}
+    <img src="{{ activity.image_url }}" alt="{{ activity.title }}" />
+    {% endif %}
+    <div class="blog-content">{{ activity.content_html | safe }}</div>
+  </article>
+</section>
+{% endblock %}
