@@ -244,7 +244,7 @@ img {
 
 .card-content .card-meta {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   margin-bottom: 0.6rem;
 }
 
@@ -271,6 +271,15 @@ img {
   background: transparent;
   border: 1px solid var(--accent);
   color: var(--accent);
+}
+
+.button.danger {
+  background: #f26d6d;
+  color: #1a1a1a;
+}
+
+.button.danger:hover {
+  box-shadow: 0 8px 24px rgba(242, 109, 109, 0.35);
 }
 
 .form {
@@ -307,7 +316,7 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--muted);
 }
 
@@ -836,6 +845,44 @@ select:focus {
 .blog-detail img {
   margin: 1.5rem 0;
   border-radius: 16px;
+}
+
+.content-image-link {
+  display: inline-block;
+}
+
+.content-image {
+  max-width: 600px;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  border-radius: 14px;
+}
+
+.entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.visibility-badge {
+  display: inline-block;
+  margin-top: 0.6rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.card .visibility-badge,
+.blog-item .visibility-badge {
+  margin-top: 0.5rem;
 }
 
 .entry-meta {

@@ -3,7 +3,17 @@
 {% block content %}
 <section class="section container reveal">
   <article class="blog-detail">
-    <h1>{{ entry.title }}</h1>
+    <div class="entry-header">
+      <div>
+        <h1>{{ entry.title }}</h1>
+        {% if entry.is_hidden and user %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
+      </div>
+      {% if can_edit %}
+      <a class="button ghost" href="/blog/{{ entry._id }}/editar">Editar</a>
+      {% endif %}
+    </div>
     {% if entry.published_at_display %}
     <p class="entry-meta">
       {{ entry.published_at_display }}{% if entry.show_author and entry.author_name %}, publicado por {{ entry.author_name }}{% endif %}
@@ -18,4 +28,8 @@
     </div>
   </article>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script defer src="/static/js/rich_text.js"></script>
 {% endblock %}

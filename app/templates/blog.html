@@ -16,6 +16,9 @@
       {% endif %}
       <div class="card-content">
         <h3>{{ entry.title }}</h3>
+        {% if user and entry.is_hidden %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
         {% if entry.published_at_display %}
         <p class="card-meta">
           {{ entry.published_at_display }}{% if entry.show_author and entry.author_name %}, publicado por {{ entry.author_name }}{% endif %}
@@ -46,6 +49,9 @@
     <article class="blog-item">
       <div>
         <h3>{{ entry.title }}</h3>
+        {% if user and entry.is_hidden %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
         <p>{{ entry.summary }}</p>
       </div>
       <a class="button ghost" href="/blog/{{ entry._id }}">Ver entrada</a>
