@@ -14,9 +14,9 @@
       <a class="button ghost" href="/actividades/{{ activity._id }}/editar">Editar</a>
       {% endif %}
     </div>
-    {% if activity.published_at_display %}
+    {% if activity.celebration_at_display %}
     <p class="entry-meta">
-      {{ activity.published_at_display }}{% if activity.show_author and activity.author_name %}, publicado por {{ activity.author_name }}{% endif %}
+      {{ activity.celebration_at_display }}{% if activity.show_author and activity.author_name %}, publicado por {{ activity.author_name }}{% endif %}
     </p>
     {% endif %}
     {% if activity.image_url and activity.show_image %}

@@ -13,3 +13,5 @@ async def ensure_indexes() -> None:
     await db.photos.create_index("uploaded_at")
     await db.blog_entries.create_index("published_at")
     await db.activities.create_index("published_at")
+    await db.activities.create_index("celebration_at")
+    await db.activities.create_index("is_upcoming")

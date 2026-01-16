@@ -16,6 +16,15 @@
     <label>Resumen
       <textarea name="summary" rows="3" required>{{ activity.summary }}</textarea>
     </label>
+    <label>Fecha de celebración
+      <input type="datetime-local" name="celebration_at" value="{{ activity.celebration_at_input }}" required />
+    </label>
+    <label>Estado de la actividad
+      <select name="is_upcoming" required>
+        <option value="future" {% if activity.is_upcoming %}selected{% endif %}>Próxima actividad</option>
+        <option value="past" {% if not activity.is_upcoming %}selected{% endif %}>Actividad pasada</option>
+      </select>
+    </label>
     <label>Autor (opcional)
       <input type="text" name="author_name" value="{{ activity.author_name }}" />
     </label>

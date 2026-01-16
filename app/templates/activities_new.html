@@ -17,6 +17,15 @@
     <label>Resumen
       <textarea name="summary" rows="3" required></textarea>
     </label>
+    <label>Fecha de celebración
+      <input type="datetime-local" name="celebration_at" required />
+    </label>
+    <label>Estado de la actividad
+      <select name="is_upcoming" required>
+        <option value="future" selected>Próxima actividad</option>
+        <option value="past">Actividad pasada</option>
+      </select>
+    </label>
     <label>Autor (opcional)
       <input type="text" name="author_name" value="{{ author_default }}" />
     </label>
