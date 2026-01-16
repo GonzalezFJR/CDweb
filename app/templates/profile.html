@@ -30,28 +30,34 @@
           Añade tu equipo habitual de observación o astrofotografía con las características.
         </p>
         <form class="form" method="post" action="/perfil/equipos">
-          <label>Nuevo equipo
-            <input type="text" name="equipment_label" placeholder="Telescopio, cámara, montura..." required />
+          <label>Equipo de observación
+            <textarea name="equipment_notes" rows="5" maxlength="500" placeholder="Telescopio, cámara, montura...">{{ profile.equipment_notes }}</textarea>
+            <span class="muted">Máximo 500 caracteres.</span>
           </label>
-          <button class="button" type="submit">Añadir equipo</button>
+          <button class="button" type="submit">Guardar equipo</button>
         </form>
-
-        <div class="equipment-list">
-          {% if profile.equipment %}
-          {% for item in profile.equipment %}
-          <div class="equipment-item">
-            <span>{{ item.label }}</span>
-            <form method="post" action="/perfil/equipos/{{ item.id }}/eliminar">
-              <button class="button ghost" type="submit">Eliminar</button>
-            </form>
-          </div>
-          {% endfor %}
-          {% else %}
-          <p class="muted">Aún no has registrado equipos.</p>
-          {% endif %}
-        </div>
       </div>
     </div>
+  </div>
+
+  <div class="profile-gallery">
+    <div class="section-header">
+      <h2>Mis astrofotos</h2>
+    </div>
+    {% if user_photos %}
+    <div class="photo-grid photo-grid--compact">
+      {% for photo in user_photos %}
+      <a class="photo-card photo-card--compact" href="/astrofotos/{{ photo._id }}">
+        <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
+        <div class="photo-info">
+          <h3>{{ photo.name }}</h3>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Aún no has subido astrofotos.</p>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

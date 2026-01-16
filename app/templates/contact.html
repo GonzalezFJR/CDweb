@@ -3,20 +3,27 @@
 {% block content %}
 <section class="section container reveal">
   <h1>Contacto</h1>
-  {% if success %}
-  <div class="alert success">Mensaje enviado correctamente.</div>
-  {% endif %}
-  <form class="form" method="post">
-    <label>Nombre
-      <input type="text" name="name" required />
-    </label>
-    <label>Email
-      <input type="email" name="email" required />
-    </label>
-    <label>Mensaje
-      <textarea name="message" rows="5" required></textarea>
-    </label>
-    <button class="button" type="submit">Enviar</button>
-  </form>
+  <div class="contact-grid">
+    <div class="contact-art">
+      <img src="/static/store/page/contacto.png" alt="Contacto Cielos Despejados" />
+    </div>
+    <div class="contact-form">
+      {% if success %}
+      <div class="alert success">Mensaje enviado correctamente.</div>
+      {% endif %}
+      <form class="form" method="post">
+        <label>Nombre
+          <input type="text" name="name" required />
+        </label>
+        <label>Email
+          <input type="email" name="email" required />
+        </label>
+        <label>Mensaje
+          <textarea name="message" rows="5" required></textarea>
+        </label>
+        <button class="button" type="submit">Enviar</button>
+      </form>
+    </div>
+  </div>
 </section>
 {% endblock %}
