@@ -2,7 +2,7 @@
 
 {% block content %}
 <section class="section container reveal">
-  <h1>Astrofotos</h1>
+  <h1>Astrofotografía</h1>
   <div class="photo-grid">
     {% for photo in photos %}
     <a class="photo-card" href="/astrofotos/{{ photo._id }}">
@@ -44,15 +44,8 @@
           <span class="muted">Tiempo de exposición, filtros...</span>
         </label>
         <label>Equipo usado
-          <input type="text" name="equipment" list="equipment-options" />
+          <input type="text" name="equipment" />
         </label>
-        {% if equipment_options %}
-        <datalist id="equipment-options">
-          {% for item in equipment_options %}
-          <option value="{{ item.label }}"></option>
-          {% endfor %}
-        </datalist>
-        {% endif %}
         <label>Descripción
           <textarea name="description" rows="3"></textarea>
         </label>

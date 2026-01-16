@@ -94,24 +94,7 @@ def _serialize_doc(document: dict[str, Any]) -> dict[str, Any]:
 def _user_display_name(user: dict | None) -> str:
     if not user:
         return ""
-    return user.get("full_name") or user.get("email", "")
-
-
-def _normalized_equipment_list(user: dict | None) -> list[dict[str, str]]:
-    equipment = []
-    if user:
-        equipment = user.get("equipment", [])
-    normalized = []
-    for item in equipment:
-        if isinstance(item, dict):
-            label = item.get("label")
-            item_id = item.get("id")
-        else:
-            label = str(item)
-            item_id = f"eq-{label}"
-        if label:
-            normalized.append({"id": item_id or label, "label": label})
-    return normalized
+    return user.get("full_name", "")
 
 
 async def _ensure_user_profile(user: dict) -> dict[str, Any]:
@@ -122,7 +105,7 @@ async def _ensure_user_profile(user: dict) -> dict[str, Any]:
             "full_name": "",
             "location": "",
             "bio": "",
-            "equipment": [],
+            "equipment_notes": "",
             "is_admin": bool(user.get("is_admin")),
         }
     return profile
@@ -193,7 +176,6 @@ async def associate_submit(
 @app.get("/astrofotos")
 async def astrofotos(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
     photos = await _fetch_recent_photos(limit=50)
-    equipment_options = _normalized_equipment_list(user)
     author_default = _user_display_name(user)
     return templates.TemplateResponse(
         "astrofotos.html",
@@ -201,7 +183,6 @@ async def astrofotos(request: Request, user: dict | None = Depends(get_current_u
             "request": request,
             "photos": photos,
             "user": user,
-            "equipment_options": equipment_options,
             "author_default": author_default,
         },
     )
@@ -265,6 +246,7 @@ async def astrofotos_upload(
         "equipment": (equipment or "").strip(),
         "description": (description or "").strip(),
         "author": author_value,
+        "uploaded_by": user.get("email", ""),
         "image_url": f"/static/store/pics/{filename}",
         "versions": versions,
     }
@@ -455,10 +437,17 @@ async def profile(request: Request, user: dict | None = Depends(get_current_user
     if not user:
         raise HTTPException(status_code=403)
     profile_data = await _ensure_user_profile(user)
-    profile_data["equipment"] = _normalized_equipment_list(profile_data)
+    profile_data.setdefault("equipment_notes", "")
+    user_photos_cursor = db.photos.find({"uploaded_by": user["email"]}).sort("uploaded_at", -1)
+    user_photos = [_serialize_doc(photo) async for photo in user_photos_cursor]
     return templates.TemplateResponse(
         "profile.html",
-        {"request": request, "user": user, "profile": profile_data},
+        {
+            "request": request,
+            "user": user,
+            "profile": profile_data,
+            "user_photos": user_photos,
+        },
     )
 
 
@@ -488,38 +477,22 @@ async def profile_update(
 
 
 @app.post("/perfil/equipos")
-async def profile_add_equipment(
-    request: Request,
-    equipment_label: str = Form(...),
+async def profile_update_equipment(
+    equipment_notes: str = Form(""),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
     if not user:
         raise HTTPException(status_code=403)
-    label = equipment_label.strip()
-    if not label:
-        return RedirectResponse("/perfil", status_code=303)
-    equipment_entry = {"id": f"eq-{datetime.utcnow().timestamp()}", "label": label}
+    notes = equipment_notes.strip()
+    if len(notes) > 500:
+        notes = notes[:500]
     await db.users.update_one(
         {"email": user["email"]},
         {
-            "$push": {"equipment": equipment_entry},
+            "$set": {"equipment_notes": notes},
             "$setOnInsert": {"is_admin": bool(user.get("is_admin"))},
         },
         upsert=True,
-    )
-    return RedirectResponse("/perfil", status_code=303)
-
-
-@app.post("/perfil/equipos/{equipment_id}/eliminar")
-async def profile_delete_equipment(
-    equipment_id: str,
-    user: dict | None = Depends(get_current_user),
-) -> Any:
-    if not user:
-        raise HTTPException(status_code=403)
-    await db.users.update_one(
-        {"email": user["email"]},
-        {"$pull": {"equipment": {"id": equipment_id}}},
     )
     return RedirectResponse("/perfil", status_code=303)
 
