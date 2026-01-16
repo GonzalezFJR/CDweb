@@ -16,6 +16,11 @@
       {% endif %}
       <div class="card-content">
         <h3>{{ entry.title }}</h3>
+        {% if entry.published_at_display %}
+        <p class="card-meta">
+          {{ entry.published_at_display }}{% if entry.show_author and entry.author_name %}, publicado por {{ entry.author_name }}{% endif %}
+        </p>
+        {% endif %}
         <p>{{ entry.summary }}</p>
         <a class="button ghost" href="/blog/{{ entry._id }}">Ver más</a>
       </div>

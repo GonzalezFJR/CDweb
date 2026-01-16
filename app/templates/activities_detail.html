@@ -4,10 +4,18 @@
 <section class="section container reveal">
   <article class="blog-detail">
     <h1>{{ activity.title }}</h1>
-    {% if activity.image_url %}
+    {% if activity.published_at_display %}
+    <p class="entry-meta">
+      {{ activity.published_at_display }}{% if activity.show_author and activity.author_name %}, publicado por {{ activity.author_name }}{% endif %}
+    </p>
+    {% endif %}
+    {% if activity.image_url and activity.show_image %}
     <img src="{{ activity.image_url }}" alt="{{ activity.title }}" />
     {% endif %}
     <div class="blog-content">{{ activity.content_html | safe }}</div>
+    <div class="entry-actions">
+      <a class="button ghost" href="/actividades">Volver a las actividades</a>
+    </div>
   </article>
 </section>
 {% endblock %}

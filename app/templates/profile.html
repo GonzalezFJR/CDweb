@@ -42,6 +42,48 @@
 
   <div class="profile-gallery">
     <div class="section-header">
+      <h2>Mis entradas del blog</h2>
+    </div>
+    {% if blog_entries %}
+    <div class="profile-entry-list">
+      {% for entry in blog_entries %}
+      <article class="profile-entry">
+        <div class="entry-header">
+          <h3>{{ entry.title }}</h3>
+          <a class="button ghost small" href="/blog/{{ entry._id }}/editar">Editar</a>
+        </div>
+        <p class="muted">{{ entry.summary }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Aún no has publicado entradas en el blog.</p>
+    {% endif %}
+  </div>
+
+  <div class="profile-gallery">
+    <div class="section-header">
+      <h2>Mis actividades</h2>
+    </div>
+    {% if activity_entries %}
+    <div class="profile-entry-list">
+      {% for entry in activity_entries %}
+      <article class="profile-entry">
+        <div class="entry-header">
+          <h3>{{ entry.title }}</h3>
+          <a class="button ghost small" href="/actividades/{{ entry._id }}/editar">Editar</a>
+        </div>
+        <p class="muted">{{ entry.summary }}</p>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Aún no has publicado actividades.</p>
+    {% endif %}
+  </div>
+
+  <div class="profile-gallery">
+    <div class="section-header">
       <h2>Mis astrofotos</h2>
     </div>
     {% if user_photos %}

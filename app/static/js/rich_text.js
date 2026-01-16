@@ -57,6 +57,68 @@ const insertHtmlIntoEditor = (container, html) => {
   }
 };
 
+const buildImageMarkup = (url) =>
+  `<a href="${url}" data-lightbox-link><img src="${url}" alt="Imagen adjunta" style="max-width:600px;max-height:400px;width:auto;height:auto;" /></a>`;
+
+const ensureLightbox = () => {
+  if (document.querySelector('[data-lightbox-overlay]')) {
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'lightbox-overlay';
+  overlay.dataset.lightboxOverlay = 'true';
+  overlay.innerHTML = `
+    <div class="lightbox-content">
+      <button class="lightbox-close" type="button" aria-label="Cerrar">✕</button>
+      <img src="" alt="Imagen ampliada" />
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+const openLightbox = (url) => {
+  ensureLightbox();
+  const overlay = document.querySelector('[data-lightbox-overlay]');
+  if (!overlay) {
+    return;
+  }
+  const img = overlay.querySelector('img');
+  if (img) {
+    img.src = url;
+  }
+  overlay.classList.add('is-active');
+};
+
+const closeLightbox = () => {
+  const overlay = document.querySelector('[data-lightbox-overlay]');
+  if (!overlay) {
+    return;
+  }
+  overlay.classList.remove('is-active');
+};
+
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('[data-lightbox-link]');
+  if (link) {
+    event.preventDefault();
+    openLightbox(link.getAttribute('href'));
+    return;
+  }
+  if (event.target.closest('.lightbox-close')) {
+    closeLightbox();
+    return;
+  }
+  if (event.target.matches('.lightbox-overlay.is-active')) {
+    closeLightbox();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeLightbox();
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-rich-editor]').forEach((container) => {
     const textarea = container.querySelector('textarea');
@@ -117,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = gallery.querySelector('[data-gallery-grid]');
     const pagination = gallery.querySelector('[data-gallery-pagination]');
     const uploadInput = gallery.querySelector('[data-gallery-upload]');
+    const dropzone = gallery.querySelector('[data-gallery-dropzone]');
     const insertButton = gallery.querySelector('[data-gallery-insert]');
     const selected = new Set();
     let loaded = false;
@@ -249,13 +312,46 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    if (dropzone && uploadInput) {
+      const triggerUpload = (files) => {
+        if (!files.length) {
+          return;
+        }
+        const dataTransfer = new DataTransfer();
+        Array.from(files).forEach((file) => dataTransfer.items.add(file));
+        uploadInput.files = dataTransfer.files;
+        uploadInput.dispatchEvent(new Event('change'));
+      };
+
+      dropzone.addEventListener('click', () => {
+        uploadInput.click();
+      });
+
+      dropzone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropzone.classList.add('is-dragging');
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('is-dragging');
+      });
+
+      dropzone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('is-dragging');
+        if (event.dataTransfer?.files) {
+          triggerUpload(event.dataTransfer.files);
+        }
+      });
+    }
+
     if (insertButton) {
       insertButton.addEventListener('click', () => {
         const urls = Array.from(selected);
         if (urls.length === 0) {
           return;
         }
-        const html = urls.map((url) => `<p><img src="${url}" alt="" /></p>`).join('\n');
+        const html = urls.map((url) => `<p>${buildImageMarkup(url)}</p>`).join('\n');
         const editor = gallery.closest('form')?.querySelector('[data-rich-editor]');
         insertHtmlIntoEditor(editor, html);
         selected.clear();

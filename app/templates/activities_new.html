@@ -17,6 +17,9 @@
     <label>Resumen
       <textarea name="summary" rows="3" required></textarea>
     </label>
+    <label>Autor (opcional)
+      <input type="text" name="author_name" value="{{ author_default }}" />
+    </label>
     <div class="rich-editor" data-rich-editor>
       <div class="rich-editor__header">
         <span class="rich-editor__label">Contenido</span>
@@ -29,17 +32,25 @@
       <div class="rich-editor__quill" data-rich-editor-quill></div>
       <textarea class="rich-editor__textarea" name="content_html" rows="12" required></textarea>
     </div>
-    <label>Imagen principal
-      <input type="file" name="image" accept="image/*" />
-    </label>
+    <div class="image-main-field">
+      <label>Imagen principal
+        <input type="file" name="image" accept="image/*" />
+      </label>
+      <label class="rich-editor__switch image-visibility-switch" title="Si desactivas esta opción, la imagen solo aparecerá en la miniatura de la card y no en la entrada.">
+        <input type="checkbox" class="rich-editor__toggle-input" name="show_image" checked />
+        <span class="rich-editor__switch-slider"></span>
+        <span class="rich-editor__switch-text">Visible en la entrada</span>
+      </label>
+    </div>
     <div class="image-gallery" data-image-gallery data-image-scope="activities">
       <button class="button ghost small" type="button" data-gallery-toggle>Agregar otras imágenes</button>
       <div class="image-gallery__panel" hidden>
+        <div class="image-gallery__dropzone" data-gallery-dropzone>
+          <input type="file" accept="image/*" multiple data-gallery-upload hidden />
+          <p>Arrastra tus imágenes aquí para subirlas automáticamente.</p>
+          <span class="muted">También puedes hacer clic para seleccionar archivos.</span>
+        </div>
         <div class="image-gallery__actions">
-          <label class="button ghost small">
-            Subir imágenes
-            <input type="file" accept="image/*" multiple data-gallery-upload hidden />
-          </label>
           <button class="button" type="button" data-gallery-insert disabled>Agregar imagen a contenido</button>
         </div>
         <div class="image-gallery__grid" data-gallery-grid></div>
