@@ -163,7 +163,15 @@ img {
 }
 
 .section {
-  padding: 3.5rem 0;
+  padding: 4.5rem 0;
+}
+
+.section + .section {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-bleed {
+  padding: 2rem 0;
 }
 
 .section-grid {
@@ -188,6 +196,72 @@ img {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.text-link {
+  color: #8cc8ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.text-link:hover {
+  color: #a6d7ff;
+}
+
+.upcoming-empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.upcoming-empty__image img {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.upcoming-empty__content p {
+  margin-bottom: 1.5rem;
+}
+
+.upcoming-empty__socials {
+  display: flex;
+  gap: 1rem;
+}
+
+.hero-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 180px;
+  background: linear-gradient(rgba(7, 9, 15, 0.55), rgba(7, 9, 15, 0.55)),
+    url("/static/store/page/CDhero_asociate.jpg") center/cover no-repeat;
+  border-radius: 0;
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+
+.hero-cta__content {
+  max-width: 900px;
+}
+
+.hero-cta h2 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  margin-bottom: 0.6rem;
+}
+
+.hero-cta p {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+@media (max-width: 900px) {
+  .upcoming-empty {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mini-slider img {
