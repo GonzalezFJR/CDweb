@@ -62,7 +62,7 @@ const appendHtmlToEditor = (container, html) => {
 
 const buildImageMarkup = (url) => `
   <a href="${url}" target="_blank" rel="noopener noreferrer">
-    <img class="blog-image" src="${url}" alt="Imagen adjunta">
+    <img class="blog-image" src="${url}" alt="Imagen adjunta" style="width:50%">
   </a>
 `;
 
