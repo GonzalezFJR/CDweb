@@ -8,8 +8,10 @@
     <a class="button" href="/actividades/nueva">Nueva noticia</a>
     {% endif %}
   </div>
-  <div class="cards">
-    {% for entry in latest_entries %}
+  <h2>Próximas actividades</h2>
+  {% if upcoming_entries %}
+  <div class="cards cards--three">
+    {% for entry in upcoming_entries %}
     <article class="card">
       {% if entry.image_url %}
       <img src="{{ entry.image_url }}" alt="{{ entry.title }}" />
@@ -19,31 +21,22 @@
         {% if user and entry.is_hidden %}
         <span class="visibility-badge">Oculto</span>
         {% endif %}
-        {% if entry.published_at_display %}
-        <p class="card-meta">
-          {{ entry.published_at_display }}{% if entry.show_author and entry.author_name %}, publicado por {{ entry.author_name }}{% endif %}
-        </p>
+        {% if entry.celebration_at_display %}
+        <p class="card-meta">{{ entry.celebration_at_display }}</p>
         {% endif %}
         <p>{{ entry.summary }}</p>
         <a class="button ghost" href="/actividades/{{ entry._id }}">Ver más</a>
       </div>
     </article>
-    {% else %}
-    {% for _ in range(3) %}
-    <article class="card placeholder-card">
-      <div class="placeholder-thumb"></div>
-      <div class="card-content">
-        <h3>Próximamente</h3>
-        <p>Compartiremos nuevas actividades y encuentros muy pronto.</p>
-      </div>
-    </article>
-    {% endfor %}
     {% endfor %}
   </div>
+  {% else %}
+  <p class="muted">No hay actividades previstas en este momento.</p>
+  {% endif %}
 </section>
 
 <section class="section container reveal">
-  <h2>Actividades anteriores</h2>
+  <h2>Actividades pasadas</h2>
   <div class="blog-list">
     {% for entry in entries %}
     <article class="blog-item">
@@ -51,6 +44,9 @@
         <h3>{{ entry.title }}</h3>
         {% if user and entry.is_hidden %}
         <span class="visibility-badge">Oculto</span>
+        {% endif %}
+        {% if entry.celebration_at_display %}
+        <p class="card-meta">{{ entry.celebration_at_display }}</p>
         {% endif %}
         <p>{{ entry.summary }}</p>
       </div>

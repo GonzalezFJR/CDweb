@@ -125,12 +125,30 @@ async def _fetch_recent_blog_entries(
     return [_prepare_publication_entry(entry) async for entry in cursor]
 
 
-async def _fetch_recent_activities(
+def _activity_filter(include_hidden: bool, is_upcoming: bool | None = None) -> dict[str, Any]:
+    filters = dict(_publication_filter(include_hidden))
+    if is_upcoming is not None:
+        if is_upcoming:
+            filters["is_upcoming"] = True
+        else:
+            filters["is_upcoming"] = {"$ne": True}
+    return filters
+
+
+async def _fetch_upcoming_activities(include_hidden: bool = False) -> list[dict[str, Any]]:
+    cursor = (
+        db.activities.find(_activity_filter(include_hidden, is_upcoming=True))
+        .sort("celebration_at", 1)
+    )
+    return [_prepare_publication_entry(activity) async for activity in cursor]
+
+
+async def _fetch_recent_past_activities(
     limit: int = 3, include_hidden: bool = False
 ) -> list[dict[str, Any]]:
     cursor = (
-        db.activities.find(_publication_filter(include_hidden))
-        .sort("published_at", -1)
+        db.activities.find(_activity_filter(include_hidden, is_upcoming=False))
+        .sort("celebration_at", -1)
         .limit(limit)
     )
     return [_prepare_publication_entry(activity) async for activity in cursor]
@@ -163,10 +181,14 @@ def _prepare_publication_entry(document: dict[str, Any]) -> dict[str, Any]:
     serialized = _serialize_doc(document)
     serialized["published_at_display"] = _format_spanish_date(serialized.get("published_at"))
     serialized["published_at_input"] = _format_datetime_input(serialized.get("published_at"))
+    celebration_at = serialized.get("celebration_at") or serialized.get("published_at")
+    serialized["celebration_at_display"] = _format_spanish_date(celebration_at)
+    serialized["celebration_at_input"] = _format_datetime_input(celebration_at)
     serialized["author_name"] = (serialized.get("author_name") or "").strip()
     serialized["show_author"] = bool(serialized.get("show_author", True))
     serialized["show_image"] = bool(serialized.get("show_image", True))
     serialized["is_hidden"] = bool(serialized.get("is_hidden", False))
+    serialized["is_upcoming"] = bool(serialized.get("is_upcoming", False))
     return serialized
 
 
@@ -196,7 +218,10 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
         "request": request,
         "home_images": _list_home_images(),
         "photos": await _fetch_recent_photos(),
-        "activities": await _fetch_recent_activities(include_hidden=bool(user)),
+        "upcoming_activities": await _fetch_upcoming_activities(include_hidden=bool(user)),
+        "recent_activities": await _fetch_recent_past_activities(
+            include_hidden=bool(user)
+        ),
         "blog_entries": await _fetch_recent_blog_entries(include_hidden=bool(user)),
         "user": user,
     }
@@ -571,21 +596,23 @@ async def activities(
     per_page = 5
     skip = (page - 1) * per_page
     activities_cursor = (
-        db.activities.find(_publication_filter(bool(user)))
-        .sort("published_at", -1)
+        db.activities.find(_activity_filter(bool(user), is_upcoming=False))
+        .sort("celebration_at", -1)
         .skip(skip)
         .limit(per_page)
     )
     activity_entries = [_prepare_publication_entry(activity) async for activity in activities_cursor]
-    total_entries = await db.activities.count_documents(_publication_filter(bool(user)))
+    total_entries = await db.activities.count_documents(
+        _activity_filter(bool(user), is_upcoming=False)
+    )
     total_pages = max(1, (total_entries + per_page - 1) // per_page)
-    latest_entries = await _fetch_recent_activities(limit=3, include_hidden=bool(user))
+    upcoming_entries = await _fetch_upcoming_activities(include_hidden=bool(user))
     return templates.TemplateResponse(
         "activities.html",
         {
             "request": request,
             "entries": activity_entries,
-            "latest_entries": latest_entries,
+            "upcoming_entries": upcoming_entries,
             "page": page,
             "total_pages": total_pages,
             "user": user,
@@ -609,6 +636,8 @@ async def activities_new_submit(
     title: str = Form(...),
     summary: str = Form(...),
     content_html: str = Form(...),
+    celebration_at: str = Form(...),
+    is_upcoming: str = Form(...),
     author_name: str | None = Form(None),
     show_image: str | None = Form(None),
     image: UploadFile | None = Form(None),
@@ -624,6 +653,10 @@ async def activities_new_submit(
         file_path.write_bytes(await image.read())
         image_url = f"/static/store/activities/{filename}"
     entry_id = f"activity-{datetime.utcnow().timestamp()}"
+    try:
+        celebration_date = datetime.fromisoformat(celebration_at)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Fecha inválida.") from exc
     payload = {
         "_id": entry_id,
         "title": title,
@@ -631,11 +664,13 @@ async def activities_new_submit(
         "content_html": content_html,
         "image_url": image_url,
         "published_at": datetime.utcnow(),
+        "celebration_at": celebration_date,
         "author_name": (author_name or "").strip(),
         "author_email": user.get("email", ""),
         "show_author": True,
         "show_image": show_image == "on",
         "is_hidden": False,
+        "is_upcoming": is_upcoming == "future",
     }
     await db.activities.insert_one(payload)
     return RedirectResponse("/actividades", status_code=303)
@@ -693,6 +728,8 @@ async def activities_edit_submit(
     title: str = Form(...),
     summary: str = Form(...),
     content_html: str = Form(...),
+    celebration_at: str = Form(...),
+    is_upcoming: str = Form(...),
     author_name: str | None = Form(None),
     show_author: str | None = Form(None),
     show_image: str | None = Form(None),
@@ -716,7 +753,12 @@ async def activities_edit_submit(
         "show_author": show_author == "on",
         "show_image": show_image == "on",
         "is_hidden": is_hidden == "on",
+        "is_upcoming": is_upcoming == "future",
     }
+    try:
+        updates["celebration_at"] = datetime.fromisoformat(celebration_at)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Fecha inválida.") from exc
     if image and image.filename:
         filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
         file_path = STATIC_DIR / "store" / "activities" / filename
