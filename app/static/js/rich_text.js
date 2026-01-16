@@ -24,7 +24,7 @@ const setMode = (container, quill, textarea, codeMirror, mode) => {
   }
 };
 
-const insertHtmlIntoEditor = (container, html) => {
+const appendHtmlToEditor = (container, html) => {
   const editor = container?.richEditor;
   if (!editor) {
     return;
@@ -35,30 +35,32 @@ const insertHtmlIntoEditor = (container, html) => {
 
   if (isRaw) {
     if (codeMirror) {
-      const doc = codeMirror.getDoc();
-      doc.replaceSelection(html);
+      const current = codeMirror.getValue();
+      const nextValue = `${current}${current ? '\n' : ''}${html}`;
+      codeMirror.setValue(nextValue);
       codeMirror.focus();
-      textarea.value = codeMirror.getValue();
+      codeMirror.setCursor(codeMirror.lineCount(), 0);
+      textarea.value = nextValue;
     } else if (textarea) {
-      const start = textarea.selectionStart ?? textarea.value.length;
-      const end = textarea.selectionEnd ?? textarea.value.length;
-      textarea.value = `${textarea.value.slice(0, start)}${html}${textarea.value.slice(end)}`;
+      textarea.value = `${textarea.value}${textarea.value ? '\n' : ''}${html}`;
       textarea.focus();
-      textarea.selectionStart = textarea.selectionEnd = start + html.length;
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
     }
     return;
   }
 
   if (quill) {
-    const range = quill.getSelection(true);
-    const index = range ? range.index : quill.getLength();
+    const index = quill.getLength();
     quill.clipboard.dangerouslyPasteHTML(index, html);
     quill.setSelection(index + html.length, 0);
   }
 };
 
-const buildImageMarkup = (url) =>
-  `<a href="${url}" data-lightbox-link class="content-image-link"><img src="${url}" alt="Imagen adjunta" class="content-image" /></a>`;
+const buildImageMarkup = (url) => `
+  <a href="${url}" target="_blank" rel="noopener noreferrer">
+    <img class="blog-image" src="${url}" alt="Imagen adjunta">
+  </a>
+`;
 
 const ensureLightbox = () => {
   if (document.querySelector('[data-lightbox-overlay]')) {
@@ -353,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const html = urls.map((url) => `<p>${buildImageMarkup(url)}</p>`).join('\n');
         const editor = gallery.closest('form')?.querySelector('[data-rich-editor]');
-        insertHtmlIntoEditor(editor, html);
+        appendHtmlToEditor(editor, html);
         selected.clear();
         grid?.querySelectorAll('.image-gallery__item').forEach((item) => {
           item.classList.remove('is-selected');
