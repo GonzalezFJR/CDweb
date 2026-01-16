@@ -209,12 +209,26 @@ async def associate_submit(
 @app.get("/astrofotos")
 async def astrofotos(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
     photos = await _fetch_recent_photos(limit=50)
+    authors: set[str] = set()
+    for photo in photos:
+        photo["uploaded_at_display"] = _format_spanish_date(photo.get("uploaded_at"))
+        uploaded_at = photo.get("uploaded_at")
+        if isinstance(uploaded_at, datetime):
+            photo["uploaded_at_iso"] = uploaded_at.date().isoformat()
+        elif isinstance(uploaded_at, str):
+            photo["uploaded_at_iso"] = uploaded_at.split("T")[0]
+        else:
+            photo["uploaded_at_iso"] = ""
+        author_name = (photo.get("author") or "").strip()
+        if author_name:
+            authors.add(author_name)
     author_default = _user_display_name(user)
     return templates.TemplateResponse(
         "astrofotos.html",
         {
             "request": request,
             "photos": photos,
+            "authors": sorted(authors),
             "user": user,
             "author_default": author_default,
         },

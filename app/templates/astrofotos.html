@@ -2,14 +2,38 @@
 
 {% block content %}
 <section class="section container reveal">
-  <h1>Astrofotografía</h1>
-  <div class="photo-grid">
+  <div class="section-header">
+    <h1>Astrofotografía</h1>
+    <button class="button ghost small" type="button" data-astrofoto-filter-toggle>Filtrar</button>
+  </div>
+  <div class="astrofoto-filters" data-astrofoto-filters>
+    <div class="astrofoto-filters__fields">
+      <label>
+        <span>Autor</span>
+        <select data-astrofoto-filter="author">
+          <option value="all">Todos los autores</option>
+          {% for author in authors %}
+          <option value="{{ author }}">{{ author }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>Fecha de subida</span>
+        <input type="date" data-astrofoto-filter="date" />
+      </label>
+    </div>
+    <button class="button ghost small" type="button" data-astrofoto-filter-reset>Limpiar filtros</button>
+  </div>
+  <div class="astrofoto-gallery" data-astrofoto-gallery>
     {% for photo in photos %}
-    <a class="photo-card" href="/astrofotos/{{ photo._id }}">
+    <a class="photo-card" href="/astrofotos/{{ photo._id }}" data-astrofoto-card data-author="{{ photo.author }}" data-date="{{ photo.uploaded_at_iso }}">
       <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
       <div class="photo-info">
         <h3>{{ photo.name }}</h3>
-        <p>{{ photo.author }}</p>
+        <div class="photo-info__meta">
+          <p>{{ photo.author }}</p>
+          <span>{{ photo.uploaded_at_display }}</span>
+        </div>
       </div>
     </a>
     {% else %}
@@ -24,6 +48,7 @@
     {% endfor %}
     {% endfor %}
   </div>
+  <div class="astrofoto-pagination" data-astrofoto-pagination></div>
 </section>
 
 {% if user %}

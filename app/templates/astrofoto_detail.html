@@ -2,10 +2,10 @@
 
 {% block content %}
 <section class="section container reveal">
-  <div class="photo-detail">
+  <div class="astrofoto-detail">
+    <h1>{{ photo.name }}</h1>
     <img src="{{ photo.image_url }}" alt="{{ photo.name }}" data-astrofoto-main />
     <div class="photo-meta">
-      <h1>{{ photo.name }}</h1>
       <ul>
         <li><strong>Autor:</strong> {{ photo.author }}</li>
         {% if photo.uploaded_by %}
@@ -31,20 +31,37 @@
   </div>
   <div class="astrofoto-versions-grid" data-astrofoto-versions>
     <div class="astrofoto-version-card" data-astrofoto-version data-image-url="{{ photo.image_url }}" data-description="{{ photo.description | default('', true) }}">
-      <img src="{{ photo.image_url }}" alt="{{ photo.name }} - original" />
+      <div class="astrofoto-version-card__image">
+        <img src="{{ photo.image_url }}" alt="{{ photo.name }} - original" />
+        <a class="astrofoto-version-card__open" href="{{ photo.image_url }}" target="_blank" rel="noopener" aria-label="Abrir imagen en nueva pestaña">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"></path>
+            <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"></path>
+          </svg>
+        </a>
+      </div>
       <div class="astrofoto-version-card__meta">
         <p>Imagen original</p>
-        <a class="button ghost small" href="{{ photo.image_url }}" target="_blank" rel="noopener">Abrir en nueva pestaña</a>
+        {% if photo.description %}
+        <p class="astrofoto-version-card__excerpt">{{ photo.description }}</p>
+        {% endif %}
       </div>
     </div>
     {% for version in photo.versions %}
     <div class="astrofoto-version-card" data-astrofoto-version data-image-url="{{ version.image_url }}" data-description="{{ version.description | default('', true) }}">
-      <img src="{{ version.image_url }}" alt="{{ photo.name }} - versión" />
+      <div class="astrofoto-version-card__image">
+        <img src="{{ version.image_url }}" alt="{{ photo.name }} - versión" />
+        <a class="astrofoto-version-card__open" href="{{ version.image_url }}" target="_blank" rel="noopener" aria-label="Abrir imagen en nueva pestaña">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"></path>
+            <path d="M5 5h6v2H7v10h10v-4h2v6H5V5z"></path>
+          </svg>
+        </a>
+      </div>
       <div class="astrofoto-version-card__meta">
         {% if version.description %}
-        <p>{{ version.description }}</p>
+        <p class="astrofoto-version-card__excerpt">{{ version.description }}</p>
         {% endif %}
-        <a class="button ghost small" href="{{ version.image_url }}" target="_blank" rel="noopener">Abrir en nueva pestaña</a>
       </div>
     </div>
     {% endfor %}
