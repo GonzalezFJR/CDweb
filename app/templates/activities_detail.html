@@ -3,7 +3,17 @@
 {% block content %}
 <section class="section container reveal">
   <article class="blog-detail">
-    <h1>{{ activity.title }}</h1>
+    <div class="entry-header">
+      <div>
+        <h1>{{ activity.title }}</h1>
+        {% if activity.is_hidden and user %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
+      </div>
+      {% if can_edit %}
+      <a class="button ghost" href="/actividades/{{ activity._id }}/editar">Editar</a>
+      {% endif %}
+    </div>
     {% if activity.published_at_display %}
     <p class="entry-meta">
       {{ activity.published_at_display }}{% if activity.show_author and activity.author_name %}, publicado por {{ activity.author_name }}{% endif %}
@@ -18,4 +28,8 @@
     </div>
   </article>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script defer src="/static/js/rich_text.js"></script>
 {% endblock %}

@@ -9,7 +9,7 @@
 {% block content %}
 <section class="section container reveal">
   <h1>Editar actividad</h1>
-  <form class="form" method="post">
+  <form class="form" method="post" enctype="multipart/form-data">
     <label>Título
       <input type="text" name="title" value="{{ activity.title }}" required />
     </label>
@@ -18,6 +18,9 @@
     </label>
     <label>Autor (opcional)
       <input type="text" name="author_name" value="{{ activity.author_name }}" />
+    </label>
+    <label>Cambiar imagen principal
+      <input type="file" name="image" accept="image/*" />
     </label>
     <label class="rich-editor__switch">
       <input type="checkbox" class="rich-editor__toggle-input" name="show_author" {% if activity.show_author %}checked{% endif %} />
@@ -29,6 +32,16 @@
       <span class="rich-editor__switch-slider"></span>
       <span class="rich-editor__switch-text">Mostrar imagen principal en la entrada</span>
     </label>
+    <label class="rich-editor__switch">
+      <input type="checkbox" class="rich-editor__toggle-input" name="is_hidden" {% if activity.is_hidden %}checked{% endif %} />
+      <span class="rich-editor__switch-slider"></span>
+      <span class="rich-editor__switch-text">Marcar como oculta</span>
+    </label>
+    {% if user.is_admin %}
+    <label>Fecha de publicación
+      <input type="datetime-local" name="published_at" value="{{ activity.published_at_input }}" />
+    </label>
+    {% endif %}
     <div class="rich-editor" data-rich-editor>
       <div class="rich-editor__header">
         <span class="rich-editor__label">Contenido</span>
@@ -42,6 +55,9 @@
       <textarea class="rich-editor__textarea" name="content_html" rows="12" required>{{ activity.content_html }}</textarea>
     </div>
     <button class="button" type="submit">Guardar cambios</button>
+  </form>
+  <form class="form" method="post" action="/actividades/{{ activity._id }}/eliminar" onsubmit="return confirm('¿Seguro que quieres eliminar esta actividad?');">
+    <button class="button danger" type="submit">Eliminar actividad</button>
   </form>
 </section>
 {% endblock %}

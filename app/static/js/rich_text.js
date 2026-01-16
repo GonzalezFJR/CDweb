@@ -58,7 +58,7 @@ const insertHtmlIntoEditor = (container, html) => {
 };
 
 const buildImageMarkup = (url) =>
-  `<a href="${url}" data-lightbox-link><img src="${url}" alt="Imagen adjunta" style="max-width:600px;max-height:400px;width:auto;height:auto;" /></a>`;
+  `<a href="${url}" data-lightbox-link class="content-image-link"><img src="${url}" alt="Imagen adjunta" class="content-image" /></a>`;
 
 const ensureLightbox = () => {
   if (document.querySelector('[data-lightbox-overlay]')) {

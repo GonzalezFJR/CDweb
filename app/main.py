@@ -91,13 +91,48 @@ async def _fetch_recent_photos(limit: int = 6) -> list[dict[str, Any]]:
     return [_serialize_doc(photo) async for photo in cursor]
 
 
-async def _fetch_recent_blog_entries(limit: int = 3) -> list[dict[str, Any]]:
-    cursor = db.blog_entries.find().sort("published_at", -1).limit(limit)
+def _publication_filter(include_hidden: bool) -> dict[str, Any]:
+    if include_hidden:
+        return {}
+    return {"is_hidden": {"$ne": True}}
+
+
+def _format_datetime_input(value: Any) -> str:
+    if not value:
+        return ""
+    parsed: datetime | None = None
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        cleaned = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(cleaned)
+        except ValueError:
+            return ""
+    if not parsed:
+        return ""
+    return parsed.strftime("%Y-%m-%dT%H:%M")
+
+
+async def _fetch_recent_blog_entries(
+    limit: int = 3, include_hidden: bool = False
+) -> list[dict[str, Any]]:
+    cursor = (
+        db.blog_entries.find(_publication_filter(include_hidden))
+        .sort("published_at", -1)
+        .limit(limit)
+    )
     return [_prepare_publication_entry(entry) async for entry in cursor]
 
 
-async def _fetch_recent_activities(limit: int = 3) -> list[dict[str, Any]]:
-    cursor = db.activities.find().sort("published_at", -1).limit(limit)
+async def _fetch_recent_activities(
+    limit: int = 3, include_hidden: bool = False
+) -> list[dict[str, Any]]:
+    cursor = (
+        db.activities.find(_publication_filter(include_hidden))
+        .sort("published_at", -1)
+        .limit(limit)
+    )
     return [_prepare_publication_entry(activity) async for activity in cursor]
 
 
@@ -127,9 +162,11 @@ def _format_spanish_date(value: Any) -> str:
 def _prepare_publication_entry(document: dict[str, Any]) -> dict[str, Any]:
     serialized = _serialize_doc(document)
     serialized["published_at_display"] = _format_spanish_date(serialized.get("published_at"))
+    serialized["published_at_input"] = _format_datetime_input(serialized.get("published_at"))
     serialized["author_name"] = (serialized.get("author_name") or "").strip()
     serialized["show_author"] = bool(serialized.get("show_author", True))
     serialized["show_image"] = bool(serialized.get("show_image", True))
+    serialized["is_hidden"] = bool(serialized.get("is_hidden", False))
     return serialized
 
 
@@ -154,13 +191,14 @@ async def _ensure_user_profile(user: dict) -> dict[str, Any]:
 
 
 @app.get("/")
-async def index(request: Request) -> Any:
+async def index(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
     context = {
         "request": request,
         "home_images": _list_home_images(),
         "photos": await _fetch_recent_photos(),
-        "activities": await _fetch_recent_activities(),
-        "blog_entries": await _fetch_recent_blog_entries(),
+        "activities": await _fetch_recent_activities(include_hidden=bool(user)),
+        "blog_entries": await _fetch_recent_blog_entries(include_hidden=bool(user)),
+        "user": user,
     }
     return templates.TemplateResponse("index.html", context)
 
@@ -316,11 +354,16 @@ async def astrofotos_upload(
 async def blog(request: Request, page: int = 1, user: dict | None = Depends(get_current_user)) -> Any:
     per_page = 5
     skip = (page - 1) * per_page
-    entries_cursor = db.blog_entries.find().sort("published_at", -1).skip(skip).limit(per_page)
+    entries_cursor = (
+        db.blog_entries.find(_publication_filter(bool(user)))
+        .sort("published_at", -1)
+        .skip(skip)
+        .limit(per_page)
+    )
     entries = [_prepare_publication_entry(entry) async for entry in entries_cursor]
-    total_entries = await db.blog_entries.count_documents({})
+    total_entries = await db.blog_entries.count_documents(_publication_filter(bool(user)))
     total_pages = max(1, (total_entries + per_page - 1) // per_page)
-    latest_entries = await _fetch_recent_blog_entries(limit=3)
+    latest_entries = await _fetch_recent_blog_entries(limit=3, include_hidden=bool(user))
     return templates.TemplateResponse(
         "blog.html",
         {
@@ -402,18 +445,34 @@ async def blog_new_submit(
         "author_email": user.get("email", ""),
         "show_author": True,
         "show_image": show_image == "on",
+        "is_hidden": False,
     }
     await db.blog_entries.insert_one(payload)
     return RedirectResponse("/blog", status_code=303)
 
 
 @app.get("/blog/{entry_id}")
-async def blog_detail(request: Request, entry_id: str) -> Any:
+async def blog_detail(
+    request: Request,
+    entry_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
+    if entry.get("is_hidden") and not user:
+        raise HTTPException(status_code=404)
+    can_edit = bool(
+        user and (user.get("is_admin") or entry.get("author_email") == user.get("email"))
+    )
     return templates.TemplateResponse(
-        "blog_detail.html", {"request": request, "entry": _prepare_publication_entry(entry)}
+        "blog_detail.html",
+        {
+            "request": request,
+            "entry": _prepare_publication_entry(entry),
+            "user": user,
+            "can_edit": can_edit,
+        },
     )
 
 
@@ -446,6 +505,9 @@ async def blog_edit_submit(
     author_name: str | None = Form(None),
     show_author: str | None = Form(None),
     show_image: str | None = Form(None),
+    is_hidden: str | None = Form(None),
+    published_at: str | None = Form(None),
+    image: UploadFile | None = File(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
     if not user:
@@ -455,20 +517,49 @@ async def blog_edit_submit(
         raise HTTPException(status_code=404)
     if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
+    updates = {
+        "title": title,
+        "summary": summary,
+        "content_html": content_html,
+        "author_name": (author_name or "").strip(),
+        "show_author": show_author == "on",
+        "show_image": show_image == "on",
+        "is_hidden": is_hidden == "on",
+    }
+    if image and image.filename:
+        filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
+        file_path = STATIC_DIR / "store" / "blog" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(await image.read())
+        updates["image_url"] = f"/static/store/blog/{filename}"
+    if user.get("is_admin") and published_at:
+        try:
+            updates["published_at"] = datetime.fromisoformat(published_at)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Fecha inválida.") from exc
     await db.blog_entries.update_one(
         {"_id": entry_id},
         {
-            "$set": {
-                "title": title,
-                "summary": summary,
-                "content_html": content_html,
-                "author_name": (author_name or "").strip(),
-                "show_author": show_author == "on",
-                "show_image": show_image == "on",
-            }
+            "$set": updates,
         },
     )
     return RedirectResponse(f"/blog/{entry_id}", status_code=303)
+
+
+@app.post("/blog/{entry_id}/eliminar")
+async def blog_delete(
+    entry_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    entry = await db.blog_entries.find_one({"_id": entry_id})
+    if not entry:
+        raise HTTPException(status_code=404)
+    if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
+        raise HTTPException(status_code=403)
+    await db.blog_entries.delete_one({"_id": entry_id})
+    return RedirectResponse("/blog", status_code=303)
 
 
 @app.get("/actividades")
@@ -480,12 +571,15 @@ async def activities(
     per_page = 5
     skip = (page - 1) * per_page
     activities_cursor = (
-        db.activities.find().sort("published_at", -1).skip(skip).limit(per_page)
+        db.activities.find(_publication_filter(bool(user)))
+        .sort("published_at", -1)
+        .skip(skip)
+        .limit(per_page)
     )
     activity_entries = [_prepare_publication_entry(activity) async for activity in activities_cursor]
-    total_entries = await db.activities.count_documents({})
+    total_entries = await db.activities.count_documents(_publication_filter(bool(user)))
     total_pages = max(1, (total_entries + per_page - 1) // per_page)
-    latest_entries = await _fetch_recent_activities(limit=3)
+    latest_entries = await _fetch_recent_activities(limit=3, include_hidden=bool(user))
     return templates.TemplateResponse(
         "activities.html",
         {
@@ -541,19 +635,35 @@ async def activities_new_submit(
         "author_email": user.get("email", ""),
         "show_author": True,
         "show_image": show_image == "on",
+        "is_hidden": False,
     }
     await db.activities.insert_one(payload)
     return RedirectResponse("/actividades", status_code=303)
 
 
 @app.get("/actividades/{activity_id}")
-async def activities_detail(request: Request, activity_id: str) -> Any:
+async def activities_detail(
+    request: Request,
+    activity_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
+    if activity.get("is_hidden") and not user:
+        raise HTTPException(status_code=404)
+    can_edit = bool(
+        user
+        and (user.get("is_admin") or activity.get("author_email") == user.get("email"))
+    )
     return templates.TemplateResponse(
         "activities_detail.html",
-        {"request": request, "activity": _prepare_publication_entry(activity)},
+        {
+            "request": request,
+            "activity": _prepare_publication_entry(activity),
+            "user": user,
+            "can_edit": can_edit,
+        },
     )
 
 
@@ -586,6 +696,9 @@ async def activities_edit_submit(
     author_name: str | None = Form(None),
     show_author: str | None = Form(None),
     show_image: str | None = Form(None),
+    is_hidden: str | None = Form(None),
+    published_at: str | None = Form(None),
+    image: UploadFile | None = File(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
     if not user:
@@ -595,20 +708,49 @@ async def activities_edit_submit(
         raise HTTPException(status_code=404)
     if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
+    updates = {
+        "title": title,
+        "summary": summary,
+        "content_html": content_html,
+        "author_name": (author_name or "").strip(),
+        "show_author": show_author == "on",
+        "show_image": show_image == "on",
+        "is_hidden": is_hidden == "on",
+    }
+    if image and image.filename:
+        filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
+        file_path = STATIC_DIR / "store" / "activities" / filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_bytes(await image.read())
+        updates["image_url"] = f"/static/store/activities/{filename}"
+    if user.get("is_admin") and published_at:
+        try:
+            updates["published_at"] = datetime.fromisoformat(published_at)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Fecha inválida.") from exc
     await db.activities.update_one(
         {"_id": activity_id},
         {
-            "$set": {
-                "title": title,
-                "summary": summary,
-                "content_html": content_html,
-                "author_name": (author_name or "").strip(),
-                "show_author": show_author == "on",
-                "show_image": show_image == "on",
-            }
+            "$set": updates,
         },
     )
     return RedirectResponse(f"/actividades/{activity_id}", status_code=303)
+
+
+@app.post("/actividades/{activity_id}/eliminar")
+async def activities_delete(
+    activity_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    activity = await db.activities.find_one({"_id": activity_id})
+    if not activity:
+        raise HTTPException(status_code=404)
+    if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
+        raise HTTPException(status_code=403)
+    await db.activities.delete_one({"_id": activity_id})
+    return RedirectResponse("/actividades", status_code=303)
 
 
 @app.get("/contacto")

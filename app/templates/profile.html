@@ -50,6 +50,9 @@
       <article class="profile-entry">
         <div class="entry-header">
           <h3>{{ entry.title }}</h3>
+          {% if entry.is_hidden %}
+          <span class="visibility-badge">Oculto</span>
+          {% endif %}
           <a class="button ghost small" href="/blog/{{ entry._id }}/editar">Editar</a>
         </div>
         <p class="muted">{{ entry.summary }}</p>
@@ -71,6 +74,9 @@
       <article class="profile-entry">
         <div class="entry-header">
           <h3>{{ entry.title }}</h3>
+          {% if entry.is_hidden %}
+          <span class="visibility-badge">Oculto</span>
+          {% endif %}
           <a class="button ghost small" href="/actividades/{{ entry._id }}/editar">Editar</a>
         </div>
         <p class="muted">{{ entry.summary }}</p>
