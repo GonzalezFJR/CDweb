@@ -227,6 +227,8 @@ async def astrofotos_upload(
     description: str | None = Form(None),
     author: str | None = Form(None),
     photo_file: UploadFile = Form(...),
+    version_descriptions: list[str] = Form(default=[]),
+    version_files: list[UploadFile] = File(default=[]),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
     if not user:
@@ -239,6 +241,22 @@ async def astrofotos_upload(
     author_value = author.strip() if author else ""
     if not author_value:
         author_value = _user_display_name(user)
+    versions: list[dict[str, str]] = []
+    for index, version_file in enumerate(version_files or []):
+        if not version_file.filename:
+            continue
+        version_filename = f"{datetime.utcnow().timestamp()}_{version_file.filename}"
+        version_path = STATIC_DIR / "store" / "pics" / version_filename
+        version_path.write_bytes(await version_file.read())
+        version_description = ""
+        if index < len(version_descriptions):
+            version_description = version_descriptions[index].strip()
+        versions.append(
+            {
+                "image_url": f"/static/store/pics/{version_filename}",
+                "description": version_description,
+            }
+        )
     payload = {
         "_id": filename,
         "name": name,
@@ -248,6 +266,7 @@ async def astrofotos_upload(
         "description": (description or "").strip(),
         "author": author_value,
         "image_url": f"/static/store/pics/{filename}",
+        "versions": versions,
     }
     await db.photos.insert_one(payload)
     return RedirectResponse("/astrofotos", status_code=303)

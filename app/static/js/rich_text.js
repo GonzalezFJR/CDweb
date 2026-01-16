@@ -115,10 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = gallery.querySelector('[data-gallery-toggle]');
     const panel = gallery.querySelector('.image-gallery__panel');
     const grid = gallery.querySelector('[data-gallery-grid]');
+    const pagination = gallery.querySelector('[data-gallery-pagination]');
     const uploadInput = gallery.querySelector('[data-gallery-upload]');
     const insertButton = gallery.querySelector('[data-gallery-insert]');
     const selected = new Set();
     let loaded = false;
+    let images = [];
+    let currentPage = 1;
+    const pageSize = 20;
 
     const updateInsertState = () => {
       if (insertButton) {
@@ -126,12 +130,48 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    const renderImages = (images) => {
+    const renderPagination = (totalPages) => {
+      if (!pagination) {
+        return;
+      }
+      pagination.innerHTML = '';
+
+      const createButton = (label, page, disabled) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'button ghost small';
+        button.textContent = label;
+        button.disabled = disabled;
+        if (!disabled) {
+          button.addEventListener('click', () => {
+            currentPage = page;
+            renderPage();
+          });
+        }
+        return button;
+      };
+
+      pagination.appendChild(createButton('Anterior', currentPage - 1, currentPage === 1));
+      const pageText = document.createElement('span');
+      pageText.className = 'image-gallery__page';
+      pageText.textContent = `Página ${currentPage} de ${totalPages}`;
+      pagination.appendChild(pageText);
+      pagination.appendChild(createButton('Siguiente', currentPage + 1, currentPage === totalPages));
+    };
+
+    const renderPage = () => {
       if (!grid) {
         return;
       }
       grid.innerHTML = '';
-      images.forEach((url) => {
+      const totalPages = Math.max(1, Math.ceil(images.length / pageSize));
+      if (currentPage > totalPages) {
+        currentPage = totalPages;
+      }
+      const start = (currentPage - 1) * pageSize;
+      const pageImages = images.slice(start, start + pageSize);
+
+      pageImages.forEach((url) => {
         const item = document.createElement('div');
         item.className = 'image-gallery__item';
         item.dataset.url = url;
@@ -139,6 +179,9 @@ document.addEventListener('DOMContentLoaded', () => {
         img.src = url;
         img.alt = 'Imagen disponible';
         item.appendChild(img);
+        if (selected.has(url)) {
+          item.classList.add('is-selected');
+        }
         item.addEventListener('click', () => {
           if (selected.has(url)) {
             selected.delete(url);
@@ -151,6 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         grid.appendChild(item);
       });
+      renderPagination(totalPages);
+    };
+
+    const setImages = (nextImages) => {
+      images = nextImages;
+      currentPage = 1;
+      renderPage();
     };
 
     const loadImages = async () => {
@@ -162,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const payload = await response.json();
-      renderImages(payload.images || []);
+      setImages(payload.images || []);
       loaded = true;
     };
 
@@ -192,9 +242,9 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         const payload = await response.json();
-        await renderImages(payload.images || []);
         selected.clear();
         updateInsertState();
+        setImages(payload.images || []);
         uploadInput.value = '';
       });
     }

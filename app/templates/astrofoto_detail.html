@@ -3,7 +3,7 @@
 {% block content %}
 <section class="section container reveal">
   <div class="photo-detail">
-    <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
+    <img src="{{ photo.image_url }}" alt="{{ photo.name }}" data-astrofoto-main />
     <div class="photo-meta">
       <h1>{{ photo.name }}</h1>
       <ul>
@@ -16,11 +16,29 @@
         <li><strong>Equipo:</strong> {{ photo.equipment }}</li>
         {% endif %}
       </ul>
-      {% if photo.description %}
-      <p>{{ photo.description }}</p>
-      {% endif %}
+      <p data-astrofoto-description>{{ photo.description }}</p>
       <a class="button ghost" href="{{ photo.image_url }}" target="_blank">Ver en tamaño completo</a>
     </div>
   </div>
 </section>
+{% if photo.versions %}
+<section class="section container reveal">
+  <div class="section-header">
+    <h2>Otras versiones</h2>
+  </div>
+  <div class="astrofoto-versions-grid" data-astrofoto-versions>
+    {% for version in photo.versions %}
+    <div class="astrofoto-version-card" data-astrofoto-version data-image-url="{{ version.image_url }}" data-description="{{ version.description | default('', true) }}">
+      <img src="{{ version.image_url }}" alt="{{ photo.name }} - versión" />
+      <div class="astrofoto-version-card__meta">
+        {% if version.description %}
+        <p>{{ version.description }}</p>
+        {% endif %}
+        <a class="button ghost small" href="{{ version.image_url }}" target="_blank" rel="noopener">Abrir en nueva pestaña</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

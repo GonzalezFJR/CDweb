@@ -62,6 +62,14 @@
         <label>Archivo de imagen
           <input type="file" name="photo_file" accept="image/*" required />
         </label>
+        <div class="astrofoto-versions" data-astrofoto-versions-form>
+          <div class="section-header">
+            <h3>Otras versiones</h3>
+            <button class="button ghost small" type="button" data-astrofoto-add-version>Agregar versión</button>
+          </div>
+          <p class="muted">Puedes añadir versiones alternativas con su propia descripción.</p>
+          <div class="astrofoto-versions__list" data-astrofoto-versions-list></div>
+        </div>
         <button class="button" type="submit">Subir foto</button>
       </form>
     </div>

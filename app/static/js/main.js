@@ -70,9 +70,67 @@ const setupAstrofotoUploadToggle = () => {
   });
 };
 
+const setupAstrofotoVersionFields = () => {
+  const container = document.querySelector("[data-astrofoto-versions-form]");
+  if (!container) return;
+  const list = container.querySelector("[data-astrofoto-versions-list]");
+  const addButton = container.querySelector("[data-astrofoto-add-version]");
+  if (!list || !addButton) return;
+
+  const createField = () => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "astrofoto-version-field";
+    wrapper.innerHTML = `
+      <label>Imagen de versión
+        <input type="file" name="version_files" accept="image/*" required />
+      </label>
+      <label>Descripción de versión
+        <textarea name="version_descriptions" rows="2"></textarea>
+      </label>
+      <div class="astrofoto-version-actions">
+        <button class="button ghost small" type="button" data-remove-version>Quitar versión</button>
+      </div>
+    `;
+    const removeButton = wrapper.querySelector("[data-remove-version]");
+    if (removeButton) {
+      removeButton.addEventListener("click", () => wrapper.remove());
+    }
+    return wrapper;
+  };
+
+  addButton.addEventListener("click", () => {
+    list.appendChild(createField());
+  });
+};
+
+const setupAstrofotoVersionsGallery = () => {
+  const gallery = document.querySelector("[data-astrofoto-versions]");
+  if (!gallery) return;
+  const mainImage = document.querySelector("[data-astrofoto-main]");
+  const description = document.querySelector("[data-astrofoto-description]");
+  const openLink = document.querySelector(".photo-meta a.button.ghost");
+  if (!mainImage) return;
+
+  gallery.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-astrofoto-version]");
+    if (!card) return;
+    const imageUrl = card.dataset.imageUrl;
+    if (!imageUrl) return;
+    mainImage.src = imageUrl;
+    if (openLink) {
+      openLink.href = imageUrl;
+    }
+    if (description) {
+      description.textContent = card.dataset.description || "";
+    }
+  });
+};
+
 setupSlider(document.querySelector(".hero-slider"));
 setupImageSwap(document.querySelector(".mini-slider"));
 setupNavToggle();
 setupRegisterToggle();
 setupAstrofotoUploadToggle();
+setupAstrofotoVersionFields();
+setupAstrofotoVersionsGallery();
 observeReveal();
