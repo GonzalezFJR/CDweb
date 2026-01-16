@@ -7,6 +7,8 @@
   --muted: #b2b6c2;
   --accent: #f6b26b;
   --accent-soft: rgba(246, 178, 107, 0.15);
+  --member-accent: #f4a9a9;
+  --admin-accent: #9bbcf6;
 }
 
 * {
@@ -81,10 +83,21 @@ img {
 }
 
 .nav-links .cta {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav-links .member-link {
+  color: var(--member-accent);
+}
+
+.nav-links .admin-link {
+  color: var(--admin-accent);
+}
+
+.nav-links .member-link:hover,
+.nav-links .admin-link:hover {
   color: var(--text);
-  border: 1px solid var(--accent);
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
 }
 
 .nav-toggle {
@@ -601,6 +614,43 @@ select:focus {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+}
+
+.contact-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.contact-art {
+  background: var(--surface);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 320px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.contact-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-gallery {
+  margin-top: 3rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.photo-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.photo-card--compact img {
+  height: 140px;
+  object-fit: cover;
 }
 
 .profile-grid {
