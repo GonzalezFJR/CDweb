@@ -41,9 +41,34 @@
     {% endfor %}
   </div>
   {% else %}
-  <p class="muted">
-    No hay actividades previstas. Publicaremos las próximas actividades en la web y en nuestras redes sociales.
-  </p>
+  <div class="upcoming-empty">
+    <div class="upcoming-empty__image">
+      <img src="/static/store/page/CDactividades.png" alt="Actividades de la asociación" />
+    </div>
+    <div class="upcoming-empty__content">
+      <p class="muted">
+        No hay actividades previstas. Publicaremos las próximas actividades en la web y en nuestras redes sociales.
+      </p>
+      <div class="upcoming-empty__socials">
+        <a class="social-link" href="https://www.facebook.com/cielosdespejados/" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M13.5 8.5V7c0-.9.6-1.1 1-1.1h2V3h-2.5C11.9 3 10 4.8 10 6.9v1.6H8v3h2v9h3.5v-9h2.4l.4-3h-2.8z"/>
+          </svg>
+        </a>
+        <a class="social-link" href="https://www.instagram.com/cielosdespejadosasturias/" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7.5 3h9A4.5 4.5 0 0 1 21 7.5v9A4.5 4.5 0 0 1 16.5 21h-9A4.5 4.5 0 0 1 3 16.5v-9A4.5 4.5 0 0 1 7.5 3zm0 2A2.5 2.5 0 0 0 5 7.5v9A2.5 2.5 0 0 0 7.5 19h9a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 16.5 5h-9z"/>
+            <path d="M12 7.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5zm5.25-3.1a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/>
+          </svg>
+        </a>
+        <a class="social-link" href="https://x.com/CielosDspejados" target="_blank" rel="noopener" aria-label="X">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.9 3h3.1l-6.8 7.8 8 10.2h-6.6l-5.1-6.6L5.6 21H2.5l7.3-8.4L2 3h6.8l4.7 6.1L18.9 3zm-1.2 15.1h1.7L8.2 4.8H6.4l11.3 13.3z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
   {% endif %}
 </section>
 
@@ -95,7 +120,7 @@
         Somos un grupo de aficionados a la astronomía con sede en Oviedo, Asturias. Nos reunimos habitualmente en el
         Hotel de Asociaciones Santullano los últimos viernes de cada mes a las 19.00. Si quieres conocernos, estaremos
         encantados de recibirte. Contáctanos por redes sociales o a través de
-        <a href="/contacto">este formulario</a> para más información y para confirmar nuestras próximas reuniones.
+        <a class="text-link" href="/contacto">este formulario</a> para más información y para confirmar nuestras próximas reuniones.
       </p>
     </div>
     <div class="section-media">
@@ -124,6 +149,15 @@
       <a class="button" href="/astrofotos">Ver más</a>
     </div>
   </div>
+</section>
+
+<section class="section section-bleed reveal">
+  <a class="hero-cta" href="/asociate">
+    <div class="hero-cta__content">
+      <h2>Únete a Cielos Despejados</h2>
+      <p>¿Eres un apasionado de la astronomía? ¿Te gustaría compartir esta pasión con nosotros?</p>
+    </div>
+  </a>
 </section>
 
 <section class="section container reveal">
