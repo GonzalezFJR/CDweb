@@ -24,6 +24,21 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+SPANISH_MONTHS = {
+    1: "enero",
+    2: "febrero",
+    3: "marzo",
+    4: "abril",
+    5: "mayo",
+    6: "junio",
+    7: "julio",
+    8: "agosto",
+    9: "septiembre",
+    10: "octubre",
+    11: "noviembre",
+    12: "diciembre",
+}
+
 
 @app.on_event("startup")
 async def startup() -> None:
@@ -89,6 +104,24 @@ async def _fetch_recent_activities(limit: int = 3) -> list[dict[str, Any]]:
 def _serialize_doc(document: dict[str, Any]) -> dict[str, Any]:
     document["_id"] = str(document.get("_id"))
     return document
+
+
+def _format_spanish_date(value: Any) -> str:
+    if not value:
+        return ""
+    parsed: datetime | None = None
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        cleaned = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(cleaned)
+        except ValueError:
+            return value
+    if not parsed:
+        return str(value)
+    month_name = SPANISH_MONTHS.get(parsed.month, "")
+    return f"{parsed.day:02d} de {month_name} de {parsed.year}"
 
 
 def _user_display_name(user: dict | None) -> str:
@@ -193,9 +226,11 @@ async def astrofoto_detail(request: Request, photo_id: str) -> Any:
     photo = await db.photos.find_one({"_id": photo_id})
     if not photo:
         raise HTTPException(status_code=404)
+    serialized = _serialize_doc(photo)
+    serialized["uploaded_at_display"] = _format_spanish_date(serialized.get("uploaded_at"))
     return templates.TemplateResponse(
         "astrofoto_detail.html",
-        {"request": request, "photo": _serialize_doc(photo)},
+        {"request": request, "photo": serialized},
     )
 
 

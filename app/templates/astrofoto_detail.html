@@ -11,7 +11,7 @@
         {% if photo.uploaded_by %}
         <li><strong>Subida por:</strong> {{ photo.uploaded_by }}</li>
         {% endif %}
-        <li><strong>Fecha de subida:</strong> {{ photo.uploaded_at }}</li>
+        <li><strong>Fecha de publicación:</strong> {{ photo.uploaded_at_display }}</li>
         {% if photo.characteristics or photo.exposure_time %}
         <li><strong>Características:</strong> {{ photo.characteristics or photo.exposure_time }}</li>
         {% endif %}
@@ -30,6 +30,13 @@
     <h2>Otras versiones</h2>
   </div>
   <div class="astrofoto-versions-grid" data-astrofoto-versions>
+    <div class="astrofoto-version-card" data-astrofoto-version data-image-url="{{ photo.image_url }}" data-description="{{ photo.description | default('', true) }}">
+      <img src="{{ photo.image_url }}" alt="{{ photo.name }} - original" />
+      <div class="astrofoto-version-card__meta">
+        <p>Imagen original</p>
+        <a class="button ghost small" href="{{ photo.image_url }}" target="_blank" rel="noopener">Abrir en nueva pestaña</a>
+      </div>
+    </div>
     {% for version in photo.versions %}
     <div class="astrofoto-version-card" data-astrofoto-version data-image-url="{{ version.image_url }}" data-description="{{ version.description | default('', true) }}">
       <img src="{{ version.image_url }}" alt="{{ photo.name }} - versión" />
@@ -44,4 +51,7 @@
   </div>
 </section>
 {% endif %}
+<section class="section container reveal">
+  <a class="button" href="/astrofotos">Volver a la galería de astrofotografías</a>
+</section>
 {% endblock %}
