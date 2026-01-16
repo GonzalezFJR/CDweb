@@ -50,9 +50,13 @@ const appendHtmlToEditor = (container, html) => {
   }
 
   if (quill) {
-    const index = quill.getLength();
-    quill.clipboard.dangerouslyPasteHTML(index, html);
-    quill.setSelection(index + html.length, 0);
+    const current = quill.root.innerHTML;
+    const nextValue = `${current}${current ? '\n' : ''}${html}`;
+    quill.root.innerHTML = nextValue;
+    quill.setSelection(quill.getLength(), 0);
+    if (textarea) {
+      textarea.value = nextValue;
+    }
   }
 };
 
