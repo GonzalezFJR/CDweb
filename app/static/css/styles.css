@@ -859,6 +859,15 @@ select:focus {
   border-radius: 14px;
 }
 
+.blog-image {
+  width: 50%;
+  max-height: 800px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+
 .entry-header {
   display: flex;
   align-items: center;
