@@ -488,6 +488,10 @@ select:focus {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .photo-card {
   background: var(--surface);
   border-radius: 14px;
@@ -513,6 +517,28 @@ select:focus {
   gap: 2rem;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: start;
+}
+
+.astrofoto-detail {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.astrofoto-detail img {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.photo-meta {
+  display: grid;
+  gap: 1rem;
+}
+
+.photo-meta a.button.ghost {
+  width: fit-content;
 }
 
 .astrofoto-versions {
@@ -557,6 +583,10 @@ select:focus {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.astrofoto-version-card__image {
+  position: relative;
+}
+
 .astrofoto-version-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -566,6 +596,34 @@ select:focus {
   width: 100%;
   height: 160px;
   object-fit: cover;
+}
+
+.astrofoto-version-card__open {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(6, 17, 33, 0.8);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.astrofoto-version-card:hover .astrofoto-version-card__open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.astrofoto-version-card__open svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
 .astrofoto-version-card__meta {
@@ -579,10 +637,118 @@ select:focus {
   font-size: 0.9rem;
 }
 
+.astrofoto-version-card__excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text);
+}
+
 .photo-meta ul {
   list-style: none;
   margin: 1rem 0;
   color: var(--muted);
+}
+
+.photo-meta ul li {
+  line-height: 1.6;
+}
+
+.astrofoto-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(6, 17, 33, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.astrofoto-filters.is-collapsed {
+  display: none;
+}
+
+.astrofoto-filters__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.astrofoto-filters label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.astrofoto-filters select,
+.astrofoto-filters input[type="date"] {
+  min-width: 180px;
+}
+
+.astrofoto-gallery {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.photo-info__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.photo-info__meta span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.astrofoto-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.astrofoto-pagination button {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.astrofoto-pagination button.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+@media (max-width: 960px) {
+  .astrofoto-versions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .astrofoto-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .astrofoto-versions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .astrofoto-gallery {
+    grid-template-columns: 1fr;
+  }
 }
 
 .blog-detail img {

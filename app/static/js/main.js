@@ -126,6 +126,90 @@ const setupAstrofotoVersionsGallery = () => {
   });
 };
 
+const setupAstrofotoGalleryFilters = () => {
+  const gallery = document.querySelector("[data-astrofoto-gallery]");
+  if (!gallery) return;
+  const cards = Array.from(gallery.querySelectorAll("[data-astrofoto-card]"));
+  const authorSelect = document.querySelector("[data-astrofoto-filter='author']");
+  const dateInput = document.querySelector("[data-astrofoto-filter='date']");
+  const resetButton = document.querySelector("[data-astrofoto-filter-reset]");
+  const pagination = document.querySelector("[data-astrofoto-pagination]");
+  const toggleButton = document.querySelector("[data-astrofoto-filter-toggle]");
+  const filters = document.querySelector("[data-astrofoto-filters]");
+  const pageSize = 16;
+
+  const normalize = (value) => (value || "").trim().toLowerCase();
+
+  const updatePagination = (totalPages, currentPage) => {
+    if (!pagination) return;
+    pagination.innerHTML = "";
+    if (totalPages <= 1) {
+      pagination.classList.add("is-hidden");
+      return;
+    }
+    pagination.classList.remove("is-hidden");
+    for (let page = 1; page <= totalPages; page += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = page;
+      button.dataset.page = String(page);
+      if (page === currentPage) {
+        button.classList.add("is-active");
+      }
+      pagination.appendChild(button);
+    }
+  };
+
+  const applyFilters = (page = 1) => {
+    const authorValue = normalize(authorSelect?.value || "all");
+    const dateValue = dateInput?.value || "";
+    const filtered = cards.filter((card) => {
+      const matchesAuthor =
+        authorValue === "all" ||
+        normalize(card.dataset.author) === authorValue;
+      const matchesDate =
+        !dateValue || (card.dataset.date || "").startsWith(dateValue);
+      return matchesAuthor && matchesDate;
+    });
+    cards.forEach((card) => card.classList.add("is-hidden"));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const visible = filtered.slice(start, start + pageSize);
+    visible.forEach((card) => card.classList.remove("is-hidden"));
+    updatePagination(totalPages, currentPage);
+  };
+
+  if (authorSelect) {
+    authorSelect.addEventListener("change", () => applyFilters(1));
+  }
+  if (dateInput) {
+    dateInput.addEventListener("change", () => applyFilters(1));
+  }
+  if (resetButton) {
+    resetButton.addEventListener("click", () => {
+      if (authorSelect) authorSelect.value = "all";
+      if (dateInput) dateInput.value = "";
+      applyFilters(1);
+    });
+  }
+  if (pagination) {
+    pagination.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const page = Number(button.dataset.page || "1");
+      applyFilters(page);
+    });
+  }
+  if (toggleButton && filters) {
+    toggleButton.addEventListener("click", () => {
+      filters.classList.toggle("is-collapsed");
+    });
+  }
+
+  applyFilters(1);
+};
+
 setupSlider(document.querySelector(".hero-slider"));
 setupImageSwap(document.querySelector(".mini-slider"));
 setupNavToggle();
@@ -133,4 +217,5 @@ setupRegisterToggle();
 setupAstrofotoUploadToggle();
 setupAstrofotoVersionFields();
 setupAstrofotoVersionsGallery();
+setupAstrofotoGalleryFilters();
 observeReveal();
