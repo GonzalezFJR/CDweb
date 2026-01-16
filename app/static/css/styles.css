@@ -224,11 +224,13 @@ img {
 
 .upcoming-empty__content p {
   margin-bottom: 1.5rem;
+  font-size: 1.05rem;
 }
 
 .upcoming-empty__socials {
   display: flex;
   gap: 1rem;
+  justify-content: center;
 }
 
 .hero-cta {
