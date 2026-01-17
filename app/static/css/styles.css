@@ -1318,6 +1318,15 @@ select:focus {
   color: var(--text);
 }
 
+.about-list {
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.about-spacer {
+  margin-top: 1.5rem;
+}
+
 .muted {
   color: var(--muted);
 }
