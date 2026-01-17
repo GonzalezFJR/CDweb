@@ -2,35 +2,45 @@
 
 {% block content %}
 <section class="section container reveal">
-  <h1>Asóciate</h1>
-  <p>Rellena el formulario y nos pondremos en contacto contigo.</p>
+  <h1>Únete a nosotros</h1>
+  <p>
+    Para asociarte a Cielos Despejados debes rellenar el siguiente formulario e ingresar la cuota
+    anual correspondiente a este año. No tenemos cuota de inscripción, sólo una anualidad de 15€
+    (adulto) y 7.5€ (menores de 18 años).
+  </p>
   {% if success %}
   <div class="alert success">Solicitud enviada correctamente. ¡Gracias por tu interés!</div>
   {% endif %}
-  <form class="form" method="post">
-    <label>Nombre y apellidos
+  <form class="form" method="post" enctype="multipart/form-data">
+    <label>Nombre y apellidos <span class="required-marker">*</span>
       <input type="text" name="full_name" required />
     </label>
-    <label>Email
+    <label>DNI / NIF <span class="required-marker">*</span>
+      <input type="text" name="dni" required />
+    </label>
+    <label>Email <span class="required-marker">*</span>
       <input type="email" name="email" required />
     </label>
-    <label>Teléfono
-      <input type="tel" name="phone" required />
+    <label>Número de teléfono
+      <input type="tel" name="phone" />
     </label>
     <label>¿Dónde vives?
-      <input type="text" name="city" required />
+      <input type="text" name="city" />
     </label>
-    <label>¿Qué te gusta más de la astronomía?
-      <textarea name="favorite" rows="3" required></textarea>
+    <label>¿Qué te gusta más de la astronomía? ¿Qué buscas en Cielos Despejados?
+      <textarea name="interests" rows="3"></textarea>
     </label>
-    <label>¿Tienes telescopio?
-      <select name="has_telescope" required>
-        <option value="Sí">Sí</option>
-        <option value="No">No</option>
-      </select>
+    <label>
+      ¿Tienes telescopio? ¿Sabes utilizarlo o quieres aprender? ¿Sabes de astrofotografía?
+      Cuéntanos sobre tu experiencia y tus expectativas
+      <textarea name="experience" rows="4"></textarea>
     </label>
-    <label>¿Sabes de astrofotografía o te gustaría aprender?
-      <textarea name="astro_experience" rows="3" required></textarea>
+    <p class="form-note">
+      Para unirte a la asociación debes abonar la cuota anual de 15€ (7.5€ para menores de 18 años)
+      y adjuntar el justificante de pago o enviarlo a info@cielosdespejados.es.
+    </p>
+    <label>Adjunta el justificante de pago
+      <input type="file" name="payment_receipt" accept=".pdf,image/*" />
     </label>
     <label class="form-consent">
       <input type="checkbox" name="data_policy" required />
@@ -38,12 +48,6 @@
     </label>
     <button class="button" type="submit">Enviar solicitud</button>
   </form>
-  <div class="info-card">
-    <p>
-      Para unirte a la asociación debes abonar la cuota anual de 15€ y enviar el justificante de
-      pago a <strong>{{ contact_email }}</strong>.
-    </p>
-  </div>
   <div class="policy-box">
     <p>
       <span class="policy-box__marker">*</span>
