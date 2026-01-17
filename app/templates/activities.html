@@ -4,7 +4,7 @@
 <section class="section container reveal">
   <div class="section-header">
     <h1>Actividades</h1>
-    {% if user %}
+    {% if user and user.permissions.activities %}
     <a class="button" href="/actividades/nueva">Nueva actividad</a>
     {% endif %}
   </div>

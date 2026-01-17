@@ -2,7 +2,8 @@
 
 {% block content %}
 <section class="section container reveal">
-  <h1>Solicitudes de registro</h1>
+  <h1>Gestión de usuarios</h1>
+  <h2>Solicitudes de registro</h2>
   <div class="table">
     <div class="table-row table-header">
       <span>Email</span>
@@ -22,6 +23,46 @@
     </div>
     {% else %}
     <p class="muted">No hay solicitudes pendientes.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section container reveal">
+  <h2>Usuarios registrados</h2>
+  <div class="table">
+    <div class="table-row table-header">
+      <span>Email</span>
+      <span>Permisos</span>
+      <span>Acciones</span>
+    </div>
+    {% for registered_user in users %}
+    <div class="table-row">
+      <span>{{ registered_user.email }}</span>
+      <span class="actions">
+        <form method="post" action="/admin/usuarios/{{ registered_user._id }}/permisos">
+          <label class="checkbox">
+            <input type="checkbox" name="photos" {% if registered_user.permissions.photos %}checked{% endif %} />
+            Astrofotos
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="blog" {% if registered_user.permissions.blog %}checked{% endif %} />
+            Blog
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="activities" {% if registered_user.permissions.activities %}checked{% endif %} />
+            Actividades
+          </label>
+          <button class="button ghost small" type="submit">Guardar</button>
+        </form>
+      </span>
+      <span class="actions">
+        <form method="post" action="/admin/usuarios/{{ registered_user._id }}/eliminar">
+          <button class="button ghost" type="submit">Eliminar</button>
+        </form>
+      </span>
+    </div>
+    {% else %}
+    <p class="muted">No hay usuarios registrados.</p>
     {% endfor %}
   </div>
 </section>

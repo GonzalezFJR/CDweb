@@ -22,6 +22,11 @@ async def authenticate_user(email: str, password: str) -> dict | None:
 
 async def create_user(email: str, password: str) -> dict:
     password_hash = bcrypt.hash(password)
-    user = {"email": email, "password_hash": password_hash, "is_admin": False}
+    user = {
+        "email": email,
+        "password_hash": password_hash,
+        "is_admin": False,
+        "permissions": {"photos": False, "blog": False, "activities": False},
+    }
     await db.users.insert_one(user)
     return user
