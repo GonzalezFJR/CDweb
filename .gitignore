@@ -1,0 +1,5 @@
+.env
+.venv
+app/static/pics/
+app/static/store/blog/
+app/static/store/pics/
