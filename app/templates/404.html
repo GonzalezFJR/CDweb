@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="not-found section">
+  <div class="container">
+    <div class="not-found__grid not-found__grid--{{ image_position }}">
+      <div class="not-found__media">
+        <img src="{{ image_url }}" alt="Ilustración de nubes" loading="lazy" />
+      </div>
+      <div class="not-found__content">
+        <p class="not-found__lead">Parece que hay nubes...</p>
+        <h1>404 Página no encontrada</h1>
+        <a class="button" href="/">Volver a casa</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

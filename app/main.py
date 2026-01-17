@@ -1,11 +1,14 @@
 from datetime import datetime
 from pathlib import Path
+from random import choice
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.exception_handlers import http_exception_handler as fastapi_http_exception_handler
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import authenticate_user, create_user
@@ -83,6 +86,33 @@ def _list_store_images(scope: str) -> list[str]:
             for path in directory.iterdir()
             if path.is_file()
         ]
+    )
+
+
+def _list_not_found_images() -> list[str]:
+    directory = STATIC_DIR / "store" / "page"
+    if not directory.exists():
+        return []
+    return sorted(
+        [
+            f"/static/store/page/{path.name}"
+            for path in directory.iterdir()
+            if path.is_file()
+        ]
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> Any:
+    if exc.status_code != 404:
+        return await fastapi_http_exception_handler(request, exc)
+    images = _list_not_found_images()
+    image_url = choice(images) if images else "/static/store/page/NotFound1.jpg"
+    image_position = choice(["left", "right"])
+    return templates.TemplateResponse(
+        "404.html",
+        {"request": request, "image_url": image_url, "image_position": image_position},
+        status_code=404,
     )
 
 
