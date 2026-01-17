@@ -32,12 +32,31 @@
     <label>¿Sabes de astrofotografía o te gustaría aprender?
       <textarea name="astro_experience" rows="3" required></textarea>
     </label>
+    <label class="form-consent">
+      <input type="checkbox" name="data_policy" required />
+      <span>Acepto la política de protección de datos*</span>
+    </label>
     <button class="button" type="submit">Enviar solicitud</button>
   </form>
   <div class="info-card">
     <p>
       Para unirte a la asociación debes abonar la cuota anual de 15€ y enviar el justificante de
       pago a <strong>{{ contact_email }}</strong>.
+    </p>
+  </div>
+  <div class="policy-box">
+    <p>
+      <span class="policy-box__marker">*</span>
+      De acuerdo con la LGPD, los datos personales facilitados en este formulario se tratarán con
+      confidencialidad y únicamente para gestionar la solicitud de alta, la comunicación asociativa
+      y el correcto funcionamiento de la asociación. Solo almacenaremos los datos de los candidatos
+      si la solicitud se formaliza y exclusivamente mientras la persona sea socia. No cedemos datos
+      a terceros ni los utilizamos para fines comerciales o de marketing ajenos a la actividad de la
+      asociación.
+    </p>
+    <p>
+      Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición o limitación del
+      tratamiento escribiendo a <strong>{{ contact_email }}</strong>.
     </p>
   </div>
 </section>
