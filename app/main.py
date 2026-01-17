@@ -8,6 +8,8 @@ from fastapi.exception_handlers import http_exception_handler as fastapi_http_ex
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from bson import ObjectId
+from bson.errors import InvalidId
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -26,6 +28,8 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+PERMISSION_KEYS = ("photos", "blog", "activities")
 
 SPANISH_MONTHS = {
     1: "enero",
@@ -53,8 +57,9 @@ async def get_current_user(request: Request) -> dict | None:
     if not user_email:
         return None
     if settings.admin_email and user_email == settings.admin_email:
-        return {"email": user_email, "is_admin": True}
-    return await db.users.find_one({"email": user_email})
+        return _normalize_user({"email": user_email, "is_admin": True})
+    user = await db.users.find_one({"email": user_email})
+    return _normalize_user(user) if user else None
 
 
 async def require_admin(user: dict | None = Depends(get_current_user)) -> dict:
@@ -193,6 +198,36 @@ def _serialize_doc(document: dict[str, Any]) -> dict[str, Any]:
     return document
 
 
+def _default_permissions(value: dict[str, Any] | None = None) -> dict[str, bool]:
+    permissions = value or {}
+    return {key: bool(permissions.get(key)) for key in PERMISSION_KEYS}
+
+
+def _normalize_user(user: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(user)
+    if normalized.get("is_admin"):
+        normalized["permissions"] = {key: True for key in PERMISSION_KEYS}
+    else:
+        normalized["permissions"] = _default_permissions(normalized.get("permissions"))
+    return normalized
+
+
+def _has_permission(user: dict[str, Any] | None, permission: str) -> bool:
+    if not user:
+        return False
+    if user.get("is_admin"):
+        return True
+    permissions = _default_permissions(user.get("permissions"))
+    return permissions.get(permission, False)
+
+
+def _parse_object_id(value: str) -> ObjectId:
+    try:
+        return ObjectId(value)
+    except InvalidId as exc:
+        raise HTTPException(status_code=404) from exc
+
+
 def _format_spanish_date(value: Any) -> str:
     if not value:
         return ""
@@ -242,8 +277,9 @@ async def _ensure_user_profile(user: dict) -> dict[str, Any]:
             "bio": "",
             "equipment_notes": "",
             "is_admin": bool(user.get("is_admin")),
+            "permissions": _default_permissions(),
         }
-    return profile
+    return _normalize_user(profile)
 
 
 @app.get("/")
@@ -384,7 +420,7 @@ async def astrofotos_upload(
     version_files: list[UploadFile] = File(default=[]),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user:
+    if not user or not _has_permission(user, "photos"):
         raise HTTPException(status_code=403)
     filename = f"{datetime.utcnow().timestamp()}_{photo_file.filename}"
     file_path = STATIC_DIR / "store" / "pics" / filename
@@ -455,7 +491,7 @@ async def blog(request: Request, page: int = 1, user: dict | None = Depends(get_
 
 @app.get("/blog/nueva")
 async def blog_new(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
-    if not user:
+    if not user or not _has_permission(user, "blog"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "blog_new.html",
@@ -467,6 +503,10 @@ async def blog_new(request: Request, user: dict | None = Depends(get_current_use
 async def media_list(scope: str, user: dict | None = Depends(get_current_user)) -> Any:
     if not user:
         raise HTTPException(status_code=403)
+    if scope == "blog" and not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
+    if scope == "activities" and not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
     return {"images": _list_store_images(scope)}
 
 
@@ -477,6 +517,10 @@ async def media_upload(
     user: dict | None = Depends(get_current_user),
 ) -> Any:
     if not user:
+        raise HTTPException(status_code=403)
+    if scope == "blog" and not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
+    if scope == "activities" and not _has_permission(user, "activities"):
         raise HTTPException(status_code=403)
     directory = _store_images_dir(scope)
     directory.mkdir(parents=True, exist_ok=True)
@@ -500,7 +544,7 @@ async def blog_new_submit(
     image: UploadFile | None = Form(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user:
+    if not user or not _has_permission(user, "blog"):
         raise HTTPException(status_code=403)
     image_url = ""
     if image and image.filename:
@@ -539,7 +583,9 @@ async def blog_detail(
     if entry.get("is_hidden") and not user:
         raise HTTPException(status_code=404)
     can_edit = bool(
-        user and (user.get("is_admin") or entry.get("author_email") == user.get("email"))
+        user
+        and _has_permission(user, "blog")
+        and (user.get("is_admin") or entry.get("author_email") == user.get("email"))
     )
     return templates.TemplateResponse(
         "blog_detail.html",
@@ -563,6 +609,8 @@ async def blog_edit(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
     if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
@@ -591,6 +639,8 @@ async def blog_edit_submit(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
     if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     updates = {
@@ -632,6 +682,8 @@ async def blog_delete(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
     if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     await db.blog_entries.delete_one({"_id": entry_id})
@@ -673,7 +725,7 @@ async def activities(
 
 @app.get("/actividades/nueva")
 async def activities_new(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
-    if not user:
+    if not user or not _has_permission(user, "activities"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "activities_new.html",
@@ -694,7 +746,7 @@ async def activities_new_submit(
     image: UploadFile | None = Form(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user:
+    if not user or not _has_permission(user, "activities"):
         raise HTTPException(status_code=403)
     image_url = ""
     if image and image.filename:
@@ -740,7 +792,11 @@ async def activities_detail(
         raise HTTPException(status_code=404)
     can_edit = bool(
         user
-        and (user.get("is_admin") or activity.get("author_email") == user.get("email"))
+        and _has_permission(user, "activities")
+        and (
+            user.get("is_admin")
+            or activity.get("author_email") == user.get("email")
+        )
     )
     return templates.TemplateResponse(
         "activities_detail.html",
@@ -764,6 +820,8 @@ async def activities_edit(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
     if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
@@ -794,6 +852,8 @@ async def activities_edit_submit(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
     if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     updates = {
@@ -840,6 +900,8 @@ async def activities_delete(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
+    if not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
     if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
         raise HTTPException(status_code=403)
     await db.activities.delete_one({"_id": activity_id})
@@ -1006,9 +1068,18 @@ async def register_submit(
 async def admin_requests(request: Request, user: dict = Depends(require_admin)) -> Any:
     requests_cursor = db.pending_registrations.find().sort("requested_at", -1)
     requests_list = [_serialize_doc(req) async for req in requests_cursor]
+    users_cursor = db.users.find().sort("email", 1)
+    users_list = [
+        _serialize_doc(_normalize_user(user_doc)) async for user_doc in users_cursor
+    ]
     return templates.TemplateResponse(
         "admin_requests.html",
-        {"request": request, "requests": requests_list, "user": user},
+        {
+            "request": request,
+            "requests": requests_list,
+            "users": users_list,
+            "user": user,
+        },
     )
 
 
@@ -1030,4 +1101,30 @@ async def admin_approve(request_id: str, user: dict = Depends(require_admin)) ->
 @app.post("/admin/solicitudes/{request_id}/eliminar")
 async def admin_delete(request_id: str, user: dict = Depends(require_admin)) -> Any:
     await db.pending_registrations.delete_one({"_id": request_id})
+    return RedirectResponse("/admin/solicitudes", status_code=303)
+
+
+@app.post("/admin/usuarios/{user_id}/permisos")
+async def admin_update_permissions(
+    user_id: str,
+    photos: str | None = Form(None),
+    blog: str | None = Form(None),
+    activities: str | None = Form(None),
+    user: dict = Depends(require_admin),
+) -> Any:
+    permissions = {
+        "photos": photos == "on",
+        "blog": blog == "on",
+        "activities": activities == "on",
+    }
+    await db.users.update_one(
+        {"_id": _parse_object_id(user_id)},
+        {"$set": {"permissions": permissions}},
+    )
+    return RedirectResponse("/admin/solicitudes", status_code=303)
+
+
+@app.post("/admin/usuarios/{user_id}/eliminar")
+async def admin_user_delete(user_id: str, user: dict = Depends(require_admin)) -> Any:
+    await db.users.delete_one({"_id": _parse_object_id(user_id)})
     return RedirectResponse("/admin/solicitudes", status_code=303)
