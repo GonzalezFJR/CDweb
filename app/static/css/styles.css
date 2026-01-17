@@ -1300,6 +1300,33 @@ select:focus {
   text-decoration: underline;
 }
 
+.about-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.about-editor {
+  margin-bottom: 2.5rem;
+}
+
+.about-content .section-grid {
+  margin: 2rem 0;
+}
+
+.about-content h1 {
+  color: var(--text);
+}
+
+.about-list {
+  margin: 1rem 0 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.about-spacer {
+  margin-top: 1.5rem;
+}
+
 .muted {
   color: var(--muted);
 }
