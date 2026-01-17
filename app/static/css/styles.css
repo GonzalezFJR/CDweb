@@ -593,6 +593,12 @@ img {
   min-height: 320px;
 }
 
+.rich-editor__error {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #ffb3b3;
+}
+
 .rich-editor.is-raw .rich-editor__textarea {
   display: block;
 }

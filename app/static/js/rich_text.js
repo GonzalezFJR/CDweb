@@ -15,13 +15,53 @@ const setMode = (container, quill, textarea, codeMirror, mode) => {
     } else {
       textarea.value = html;
     }
+    if (textarea) {
+      textarea.required = true;
+    }
     container.classList.add('is-raw');
   } else {
     const html = codeMirror ? codeMirror.getValue() : textarea.value;
     quill.root.innerHTML = html || '';
     textarea.value = html || '';
+    if (textarea) {
+      textarea.required = false;
+    }
     container.classList.remove('is-raw');
   }
+};
+
+const clearEditorError = (container) => {
+  if (!container) {
+    return;
+  }
+  container.classList.remove('has-error');
+  const error = container.querySelector('.rich-editor__error');
+  if (error) {
+    error.textContent = '';
+  }
+};
+
+const showEditorError = (container, message) => {
+  if (!container) {
+    return;
+  }
+  let error = container.querySelector('.rich-editor__error');
+  if (!error) {
+    error = document.createElement('p');
+    error.className = 'rich-editor__error';
+    container.appendChild(error);
+  }
+  error.textContent = message;
+  container.classList.add('has-error');
+};
+
+const isQuillEmpty = (quill) => {
+  if (!quill) {
+    return true;
+  }
+  const text = quill.getText().trim();
+  const hasMedia = quill.root.querySelector('img, iframe, video, embed');
+  return text.length === 0 && !hasMedia;
 };
 
 const appendHtmlToEditor = (container, html) => {
@@ -143,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     quill.root.innerHTML = textarea.value || '';
+    quill.on('text-change', () => clearEditorError(container));
     const codeMirror =
       window.CodeMirror &&
       window.CodeMirror.fromTextArea(textarea, {
@@ -168,8 +209,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const form = container.closest('form');
     if (form) {
-      form.addEventListener('submit', () => {
+      form.addEventListener('submit', (event) => {
         if (!toggle || !toggle.checked) {
+          if (isQuillEmpty(quill)) {
+            event.preventDefault();
+            showEditorError(container, 'El contenido es obligatorio.');
+            quill.focus();
+            return;
+          }
+          clearEditorError(container);
           textarea.value = quill.root.innerHTML;
         } else if (codeMirror) {
           textarea.value = codeMirror.getValue();
