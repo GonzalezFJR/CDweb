@@ -46,6 +46,69 @@ SPANISH_MONTHS = {
     12: "diciembre",
 }
 
+ABOUT_PAGE_SLUG = "sobre-nosotros"
+DEFAULT_ABOUT_HTML = """
+<h1>Sobre nosotros</h1>
+<p>
+  Cielos Despejados es una asociación astronómica asturiana dedicada a la divulgación, la observación del cielo nocturno y la astrofotografía. Organizamos encuentros, talleres y salidas para compartir la pasión por el cosmos.
+</p>
+<div class="section-grid">
+  <div class="section-media">
+    <img src="/static/store/page/CDabout.jpg" alt="Cielos Despejados" />
+  </div>
+  <div class="section-text">
+    <p>
+      La asociación astronómica tiene sede en Oviedo, Asturias, y se fundó oficialmente en mayo de 2014, aunque su germen ya llevaba organizando actividades divulgativas y quedadas (g)astronómicas desde mucho antes. Los estatutos de la asociación define los fines de la misma, que son:
+    </p>
+    <ul>
+      <li>Adquirir conocimientos más profundos de las Ciencias en general, y la Astronomía en particular; así como facilitar la labor a observadores y estudiosos.</li>
+      <li>Promover cuantos temas relativos a las Ciencias en general, y a la Astronomía en particular, se consideren oportunos.</li>
+    </ul>
+    <p>
+      Participamos en actividades múltiples en colaboración con instituciones como la Facultad de Ciencias de Oviedo, la Universidad de Oviedo, o el Ayuntamiento de Oviedo. Hacemos actividades de observación para el público, charlas, astrofotografías, y talleres para colegios, público general, o en eventos. Nuestro evento anual por excelencia es la "Noche Lunática", que se celebra en septiembre/octubre por la Noche Internacional de la Luna, pero también nos encontrarás en "La Hora del Planeta", o en la "Noche Europea de los y las investigadores e Investigadoras".
+    </p>
+  </div>
+</div>
+<p>
+  Podéis contactar con la asociación de las siguientes a través del <a class="inline-link" href="/contacto">formulario de contacto</a> o por correo electrónico a info@cielosdespejados.es. También a través de nuestras redes sociales
+</p>
+<div class="social-footer">
+  <span class="social-footer__label">Nuestras redes sociales</span>
+  <div class="social-links">
+    <a class="social-link" href="https://www.facebook.com/cielosdespejados/" target="_blank" rel="noopener" aria-label="Facebook">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M13.5 8.5V7c0-.9.6-1.1 1-1.1h2V3h-2.5C11.9 3 10 4.8 10 6.9v1.6H8v3h2v9h3.5v-9h2.4l.4-3h-2.8z"/>
+      </svg>
+    </a>
+    <a class="social-link" href="https://www.instagram.com/cielosdespejadosasturias/" target="_blank" rel="noopener" aria-label="Instagram">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7.5 3h9A4.5 4.5 0 0 1 21 7.5v9A4.5 4.5 0 0 1 16.5 21h-9A4.5 4.5 0 0 1 3 16.5v-9A4.5 4.5 0 0 1 7.5 3zm0 2A2.5 2.5 0 0 0 5 7.5v9A2.5 2.5 0 0 0 7.5 19h9a2.5 2.5 0 0 0 2.5-2.5v-9A2.5 2.5 0 0 0 16.5 5h-9z"/>
+        <path d="M12 7.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 0 1 12 7.5zm0 2A2.5 2.5 0 1 0 14.5 12 2.5 2.5 0 0 0 12 9.5zm5.25-3.1a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/>
+      </svg>
+    </a>
+    <a class="social-link" href="https://x.com/CielosDspejados" target="_blank" rel="noopener" aria-label="X">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18.9 3h3.1l-6.8 7.8 8 10.2h-6.6l-5.1-6.6L5.6 21H2.5l7.3-8.4L2 3h6.8l4.7 6.1L18.9 3zm-1.2 15.1h1.7L8.2 4.8H6.4l11.3 13.3z"/>
+      </svg>
+    </a>
+  </div>
+</div>
+<p>Tras la asamblea de febrero de 2024 la Junta Directiva está formada por:</p>
+<ul>
+  <li>Marcos Suárez, presidente</li>
+  <li>María Fernández, vicepresidente</li>
+  <li>Julia Menéndez, secretaria/tesorera</li>
+  <li>Laura Hermosa, vocal</li>
+  <li>Juan F. García, vocal</li>
+</ul>
+<p>La asociación está inscrita en:</p>
+<ul>
+  <li>Registro de Asociaciones del Principado de Asturias, con el nº 11 138</li>
+  <li>Número de Identificación Fiscal: G-74 384 165</li>
+</ul>
+<p>¿Te interesa unirte a nosotros? <a class="inline-link" href="/asociate">Hazte socio aquí.</a></p>
+""".strip()
+
 
 @app.on_event("startup")
 async def startup() -> None:
@@ -128,6 +191,13 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
 async def _fetch_recent_photos(limit: int = 6) -> list[dict[str, Any]]:
     cursor = db.photos.find().sort("uploaded_at", -1).limit(limit)
     return [_serialize_doc(photo) async for photo in cursor]
+
+
+async def _fetch_about_content() -> str:
+    document = await db.page_content.find_one({"slug": ABOUT_PAGE_SLUG})
+    if document and document.get("content_html"):
+        return document["content_html"]
+    return DEFAULT_ABOUT_HTML
 
 
 def _publication_filter(include_hidden: bool) -> dict[str, Any]:
@@ -299,8 +369,29 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
 
 
 @app.get("/sobre-nosotros")
-async def about(request: Request) -> Any:
-    return templates.TemplateResponse("about.html", {"request": request})
+async def about(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
+    context = {
+        "request": request,
+        "content_html": await _fetch_about_content(),
+        "user": user,
+    }
+    return templates.TemplateResponse("about.html", context)
+
+
+@app.post("/sobre-nosotros")
+async def about_update(
+    content_html: str = Form(...),
+    user: dict = Depends(require_admin),
+) -> Any:
+    cleaned = content_html.strip()
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="El contenido es obligatorio.")
+    await db.page_content.update_one(
+        {"slug": ABOUT_PAGE_SLUG},
+        {"$set": {"content_html": cleaned, "updated_at": datetime.utcnow()}},
+        upsert=True,
+    )
+    return RedirectResponse("/sobre-nosotros", status_code=303)
 
 
 @app.get("/asociate")

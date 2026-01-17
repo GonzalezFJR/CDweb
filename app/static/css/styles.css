@@ -1300,6 +1300,24 @@ select:focus {
   text-decoration: underline;
 }
 
+.about-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.about-editor {
+  margin-bottom: 2.5rem;
+}
+
+.about-content .section-grid {
+  margin: 2rem 0;
+}
+
+.about-content h1 {
+  color: var(--text);
+}
+
 .muted {
   color: var(--muted);
 }
