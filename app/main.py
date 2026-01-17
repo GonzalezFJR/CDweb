@@ -93,13 +93,17 @@ def _list_not_found_images() -> list[str]:
     directory = STATIC_DIR / "store" / "page"
     if not directory.exists():
         return []
-    return sorted(
-        [
-            f"/static/store/page/{path.name}"
-            for path in directory.iterdir()
-            if path.is_file()
-        ]
-    )
+    not_found_images = [
+        "NotFound1.jpg",
+        "NotFound2.jpg",
+        "NotFound3.jpg",
+        "NotFound4.jpg",
+    ]
+    return [
+        f"/static/store/page/{image}"
+        for image in not_found_images
+        if (directory / image).is_file()
+    ]
 
 
 @app.exception_handler(StarletteHTTPException)
