@@ -3,13 +3,18 @@ const setupSlider = (element, interval = 4000) => {
   const images = JSON.parse(element.dataset.images || "[]");
   if (!images.length) return;
   let index = 0;
-  element.style.backgroundImage = `url('${images[0]}')`;
-  element.style.backgroundSize = "cover";
-  element.style.backgroundPosition = "center";
+  const transitionDuration = 1200;
+  element.style.setProperty("--hero-image", `url('${images[0]}')`);
 
   setInterval(() => {
     index = (index + 1) % images.length;
-    element.style.backgroundImage = `url('${images[index]}')`;
+    const nextImage = `url('${images[index]}')`;
+    element.style.setProperty("--hero-next-image", nextImage);
+    element.classList.add("is-transitioning");
+    window.setTimeout(() => {
+      element.style.setProperty("--hero-image", nextImage);
+      element.classList.remove("is-transitioning");
+    }, transitionDuration);
   }, interval);
 };
 
