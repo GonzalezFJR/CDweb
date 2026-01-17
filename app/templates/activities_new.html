@@ -8,7 +8,7 @@
 
 {% block content %}
 <section class="section container reveal">
-  <h1>Nueva noticia</h1>
+  <h1>Nueva actividad</h1>
   <p>Puedes añadir HTML en el contenido para dar formato. Las imágenes se subirán a /static/store/activities/.</p>
   <form class="form" method="post" enctype="multipart/form-data">
     <label>Título
@@ -39,7 +39,7 @@
         </label>
       </div>
       <div class="rich-editor__quill" data-rich-editor-quill></div>
-      <textarea class="rich-editor__textarea" name="content_html" rows="12" required></textarea>
+      <textarea class="rich-editor__textarea" name="content_html" rows="12"></textarea>
     </div>
     <div class="image-main-field">
       <label>Imagen principal
@@ -66,7 +66,7 @@
         <div class="image-gallery__pagination" data-gallery-pagination></div>
       </div>
     </div>
-    <button class="button" type="submit">Publicar noticia</button>
+    <button class="button" type="submit">Publicar actividad</button>
   </form>
 </section>
 {% endblock %}
