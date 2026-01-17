@@ -63,8 +63,10 @@ img {
   gap: 0.5rem;
 }
 
-.logo-mark {
-  font-size: 1.2rem;
+.logo-image {
+  height: 32px;
+  width: auto;
+  max-height: 100%;
 }
 
 .nav-links {
@@ -122,6 +124,8 @@ img {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  --hero-image: none;
+  --hero-next-image: none;
 }
 
 .hero-placeholder {
@@ -133,9 +137,34 @@ img {
   content: "";
   position: absolute;
   inset: 0;
+  background-image: var(--hero-image);
   background-size: cover;
   background-position: center;
-  transition: opacity 1s ease;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.hero-slider::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--hero-next-image);
+  background-size: cover;
+  background-position: center;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+  opacity: 0;
+  transform: translateX(6%);
+}
+
+.hero-slider.is-transitioning::before {
+  opacity: 0;
+  transform: translateX(-6%);
+}
+
+.hero-slider.is-transitioning::after {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .hero-overlay {
