@@ -12,13 +12,13 @@
   <div class="alert success">Solicitud enviada correctamente. ¡Gracias por tu interés!</div>
   {% endif %}
   <form class="form" method="post" enctype="multipart/form-data">
-    <label>Nombre y apellidos <span class="required-marker">*</span>
+    <label>Nombre y apellidos*
       <input type="text" name="full_name" required />
     </label>
-    <label>DNI / NIF <span class="required-marker">*</span>
+    <label>DNI / NIF*
       <input type="text" name="dni" required />
     </label>
-    <label>Email <span class="required-marker">*</span>
+    <label>Email*
       <input type="email" name="email" required />
     </label>
     <label>Número de teléfono
@@ -39,18 +39,18 @@
       Para unirte a la asociación debes abonar la cuota anual de 15€ (7.5€ para menores de 18 años)
       y adjuntar el justificante de pago o enviarlo a info@cielosdespejados.es.
     </p>
-    <label>Adjunta el justificante de pago
+    <label>Si ya has hecho el ingreso, puedes adjuntar el justificante de pago aquí. 
       <input type="file" name="payment_receipt" accept=".pdf,image/*" />
     </label>
     <label class="form-consent">
       <input type="checkbox" name="data_policy" required />
-      <span>Acepto la política de protección de datos*</span>
+      <span>Acepto la política de protección de datos †</span>
     </label>
     <button class="button" type="submit">Enviar solicitud</button>
   </form>
   <div class="policy-box">
     <p>
-      <span class="policy-box__marker">*</span>
+      <span class="policy-box__marker">†</span>
       De acuerdo con la LGPD, los datos personales facilitados en este formulario se tratarán con
       confidencialidad y únicamente para gestionar la solicitud de alta, la comunicación asociativa
       y el correcto funcionamiento de la asociación. Solo almacenaremos los datos de los candidatos
