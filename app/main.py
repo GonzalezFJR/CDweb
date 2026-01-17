@@ -279,28 +279,45 @@ async def associate(request: Request) -> Any:
 async def associate_submit(
     request: Request,
     full_name: str = Form(...),
+    dni: str = Form(...),
     email: str = Form(...),
-    phone: str = Form(...),
-    city: str = Form(...),
-    favorite: str = Form(...),
-    has_telescope: str = Form(...),
-    astro_experience: str = Form(...),
+    phone: str | None = Form(None),
+    city: str | None = Form(None),
+    interests: str | None = Form(None),
+    experience: str | None = Form(None),
+    payment_receipt: UploadFile | None = File(None),
+    data_policy: bool = Form(...),
 ) -> Any:
     payload = {
         "full_name": full_name,
+        "dni": dni,
         "email": email,
         "phone": phone,
         "city": city,
-        "favorite": favorite,
-        "has_telescope": has_telescope,
-        "astro_experience": astro_experience,
+        "interests": interests,
+        "experience": experience,
+        "payment_receipt_filename": payment_receipt.filename if payment_receipt else None,
+        "payment_receipt_content_type": payment_receipt.content_type
+        if payment_receipt
+        else None,
+        "data_policy": data_policy,
         "submitted_at": datetime.utcnow(),
     }
+    attachments: list[tuple[str, bytes, str]] = []
+    if payment_receipt and payment_receipt.filename:
+        attachments.append(
+            (
+                payment_receipt.filename,
+                await payment_receipt.read(),
+                payment_receipt.content_type or "application/octet-stream",
+            )
+        )
     await db.membership_requests.insert_one(payload)
     send_email(
         "Nueva solicitud de asociación",
         f"Se ha recibido una solicitud de {full_name} ({email}).",
         settings.contact_email,
+        attachments=attachments,
     )
     return templates.TemplateResponse(
         "associate.html",
