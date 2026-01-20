@@ -29,6 +29,9 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+CONSTRUCTION_IMAGE_URL = "/static/store/page/1768922588.118187_en_construccion_img.png"
+CONSTRUCTION_ALLOWED_PATHS = {"/login", "/registro", "/registro/gracias"}
+
 PERMISSION_KEYS = (
     "photos",
     "blog",
@@ -43,6 +46,21 @@ SUPERVISED_PERMISSION_MAP = {
     "blog": "blog_supervised",
     "activities": "activities_supervised",
 }
+
+
+@app.middleware("http")
+async def construction_guard(request: Request, call_next: Any) -> Any:
+    path = request.url.path
+    if path.startswith("/static") or path == "/favicon.ico":
+        return await call_next(request)
+    if request.session.get("user_email"):
+        return await call_next(request)
+    if path in CONSTRUCTION_ALLOWED_PATHS:
+        return await call_next(request)
+    return templates.TemplateResponse(
+        "construction.html",
+        {"request": request, "image_url": CONSTRUCTION_IMAGE_URL},
+    )
 
 SPANISH_MONTHS = {
     1: "enero",
@@ -1474,10 +1492,12 @@ async def register_submit(
         f"Nuevo registro pendiente para {email}.",
         settings.contact_email,
     )
-    return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "register_success": True},
-    )
+    return RedirectResponse("/registro/gracias", status_code=303)
+
+
+@app.get("/registro/gracias")
+async def register_thanks(request: Request) -> Any:
+    return templates.TemplateResponse("register_thanks.html", {"request": request})
 
 
 @app.get("/admin/solicitudes")
