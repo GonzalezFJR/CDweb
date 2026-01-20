@@ -3,7 +3,17 @@
 {% block content %}
 <section class="section container reveal">
   <div class="astrofoto-detail">
-    <h1>{{ photo.name }}</h1>
+    <div class="section-header">
+      <div>
+        <h1>{{ photo.name }}</h1>
+        {% if photo.is_hidden and user %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
+      </div>
+      {% if can_edit %}
+      <a class="button ghost" href="/astrofotos/{{ photo._id }}/editar">Editar</a>
+      {% endif %}
+    </div>
     <img src="{{ photo.image_url }}" alt="{{ photo.name }}" data-astrofoto-main />
     <div class="photo-meta">
       <ul>

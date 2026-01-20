@@ -4,7 +4,7 @@
 <section class="section container reveal">
   <div class="section-header">
     <h1>Actividades</h1>
-    {% if user and user.permissions.activities %}
+    {% if user and (user.permissions.activities or user.permissions.activities_supervised) %}
     <a class="button" href="/actividades/nueva">Nueva actividad</a>
     {% endif %}
   </div>

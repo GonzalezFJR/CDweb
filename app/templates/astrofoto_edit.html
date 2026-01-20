@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <div class="section-header">
+    <h1>Editar astrofoto</h1>
+    <a class="button ghost" href="/astrofotos/{{ photo._id }}">Volver</a>
+  </div>
+  <form class="form" method="post">
+    <label>Nombre
+      <input type="text" name="name" value="{{ photo.name }}" required />
+    </label>
+    <label>Características
+      <input type="text" name="characteristics" value="{{ photo.characteristics }}" />
+      <span class="muted">Tiempo de exposición, filtros...</span>
+    </label>
+    <label>Equipo usado
+      <input type="text" name="equipment" value="{{ photo.equipment }}" />
+    </label>
+    <label>Descripción
+      <textarea name="description" rows="3">{{ photo.description }}</textarea>
+    </label>
+    <label>Autor
+      <input type="text" name="author" value="{{ photo.author }}" required />
+    </label>
+    {% if user.permissions.photos %}
+    <label class="checkbox">
+      <input type="checkbox" name="is_hidden" {% if photo.is_hidden %}checked{% endif %} />
+      Ocultar publicación
+    </label>
+    {% endif %}
+    <button class="button" type="submit">Guardar cambios</button>
+  </form>
+</section>
+{% endblock %}

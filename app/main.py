@@ -29,7 +29,20 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-PERMISSION_KEYS = ("photos", "blog", "activities")
+PERMISSION_KEYS = (
+    "photos",
+    "blog",
+    "activities",
+    "photos_supervised",
+    "blog_supervised",
+    "activities_supervised",
+)
+
+SUPERVISED_PERMISSION_MAP = {
+    "photos": "photos_supervised",
+    "blog": "blog_supervised",
+    "activities": "activities_supervised",
+}
 
 SPANISH_MONTHS = {
     1: "enero",
@@ -191,8 +204,14 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     )
 
 
-async def _fetch_recent_photos(limit: int = 6) -> list[dict[str, Any]]:
-    cursor = db.photos.find().sort("uploaded_at", -1).limit(limit)
+def _photo_filter(include_hidden: bool) -> dict[str, Any]:
+    if include_hidden:
+        return {}
+    return {"is_hidden": {"$ne": True}}
+
+
+async def _fetch_recent_photos(limit: int = 6, include_hidden: bool = False) -> list[dict[str, Any]]:
+    cursor = db.photos.find(_photo_filter(include_hidden)).sort("uploaded_at", -1).limit(limit)
     return [_serialize_doc(photo) async for photo in cursor]
 
 
@@ -294,6 +313,27 @@ def _has_permission(user: dict[str, Any] | None, permission: str) -> bool:
     return permissions.get(permission, False)
 
 
+def _has_supervised_permission(user: dict[str, Any] | None, permission: str) -> bool:
+    supervised_key = SUPERVISED_PERMISSION_MAP.get(permission, "")
+    if not supervised_key:
+        return False
+    return _has_permission(user, supervised_key)
+
+
+def _has_any_permission(user: dict[str, Any] | None, permission: str) -> bool:
+    return _has_permission(user, permission) or _has_supervised_permission(user, permission)
+
+
+def _can_edit_entry(
+    user: dict[str, Any] | None, permission: str, author_email: str | None
+) -> bool:
+    if not user:
+        return False
+    if user.get("is_admin") or _has_permission(user, permission):
+        return True
+    return bool(author_email and author_email == user.get("email"))
+
+
 def _parse_object_id(value: str) -> ObjectId:
     try:
         return ObjectId(value)
@@ -340,6 +380,14 @@ def _user_display_name(user: dict | None) -> str:
     return user.get("full_name", "")
 
 
+def _can_manage_scope(user: dict[str, Any] | None, scope: str) -> bool:
+    if not user:
+        return False
+    if user.get("is_admin"):
+        return True
+    return _has_permission(user, scope)
+
+
 async def _ensure_user_profile(user: dict) -> dict[str, Any]:
     profile = await db.users.find_one({"email": user["email"]})
     if not profile:
@@ -360,7 +408,7 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
     context = {
         "request": request,
         "home_images": _list_home_images(),
-        "photos": await _fetch_recent_photos(),
+        "photos": await _fetch_recent_photos(include_hidden=bool(user)),
         "upcoming_activities": await _fetch_upcoming_activities(include_hidden=bool(user)),
         "recent_activities": await _fetch_recent_past_activities(
             include_hidden=bool(user)
@@ -461,7 +509,7 @@ async def associate_submit(
 
 @app.get("/astrofotos")
 async def astrofotos(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
-    photos = await _fetch_recent_photos(limit=50)
+    photos = await _fetch_recent_photos(limit=50, include_hidden=bool(user))
     authors: set[str] = set()
     for photo in photos:
         photo["uploaded_at_display"] = _format_spanish_date(photo.get("uploaded_at"))
@@ -489,15 +537,28 @@ async def astrofotos(request: Request, user: dict | None = Depends(get_current_u
 
 
 @app.get("/astrofotos/{photo_id}")
-async def astrofoto_detail(request: Request, photo_id: str) -> Any:
+async def astrofoto_detail(
+    request: Request, photo_id: str, user: dict | None = Depends(get_current_user)
+) -> Any:
     photo = await db.photos.find_one({"_id": photo_id})
     if not photo:
+        raise HTTPException(status_code=404)
+    if photo.get("is_hidden") and not user:
         raise HTTPException(status_code=404)
     serialized = _serialize_doc(photo)
     serialized["uploaded_at_display"] = _format_spanish_date(serialized.get("uploaded_at"))
     return templates.TemplateResponse(
         "astrofoto_detail.html",
-        {"request": request, "photo": serialized},
+        {
+            "request": request,
+            "photo": serialized,
+            "user": user,
+            "can_edit": bool(
+                user
+                and _has_any_permission(user, "photos")
+                and _can_edit_entry(user, "photos", photo.get("uploaded_by"))
+            ),
+        },
     )
 
 
@@ -512,9 +573,10 @@ async def astrofotos_upload(
     photo_file: UploadFile = Form(...),
     version_descriptions: list[str] = Form(default=[]),
     version_files: list[UploadFile] = File(default=[]),
+    submission_action: str | None = Form(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user or not _has_permission(user, "photos"):
+    if not user or not _has_any_permission(user, "photos"):
         raise HTTPException(status_code=403)
     filename = f"{datetime.utcnow().timestamp()}_{photo_file.filename}"
     file_path = STATIC_DIR / "store" / "pics" / filename
@@ -540,6 +602,9 @@ async def astrofotos_upload(
                 "description": version_description,
             }
         )
+    should_publish = bool(
+        submission_action != "review" and _has_permission(user, "photos")
+    )
     payload = {
         "_id": filename,
         "name": name,
@@ -551,9 +616,67 @@ async def astrofotos_upload(
         "uploaded_by": user.get("email", ""),
         "image_url": f"/static/store/pics/{filename}",
         "versions": versions,
+        "is_hidden": not should_publish,
     }
     await db.photos.insert_one(payload)
     return RedirectResponse("/astrofotos", status_code=303)
+
+
+@app.get("/astrofotos/{photo_id}/editar")
+async def astrofotos_edit(
+    request: Request,
+    photo_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    photo = await db.photos.find_one({"_id": photo_id})
+    if not photo:
+        raise HTTPException(status_code=404)
+    if not _has_any_permission(user, "photos"):
+        raise HTTPException(status_code=403)
+    if not _can_edit_entry(user, "photos", photo.get("uploaded_by")):
+        raise HTTPException(status_code=403)
+    serialized = _serialize_doc(photo)
+    serialized["uploaded_at_display"] = _format_spanish_date(serialized.get("uploaded_at"))
+    return templates.TemplateResponse(
+        "astrofoto_edit.html",
+        {"request": request, "photo": serialized, "user": user},
+    )
+
+
+@app.post("/astrofotos/{photo_id}/editar")
+async def astrofotos_edit_submit(
+    request: Request,
+    photo_id: str,
+    name: str = Form(...),
+    characteristics: str | None = Form(None),
+    equipment: str | None = Form(None),
+    description: str | None = Form(None),
+    author: str | None = Form(None),
+    is_hidden: str | None = Form(None),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    photo = await db.photos.find_one({"_id": photo_id})
+    if not photo:
+        raise HTTPException(status_code=404)
+    if not _has_any_permission(user, "photos"):
+        raise HTTPException(status_code=403)
+    if not _can_edit_entry(user, "photos", photo.get("uploaded_by")):
+        raise HTTPException(status_code=403)
+    updates = {
+        "name": name,
+        "characteristics": (characteristics or "").strip(),
+        "equipment": (equipment or "").strip(),
+        "description": (description or "").strip(),
+        "author": (author or "").strip(),
+    }
+    if _has_permission(user, "photos"):
+        updates["is_hidden"] = is_hidden == "on"
+    await db.photos.update_one({"_id": photo_id}, {"$set": updates})
+    return RedirectResponse(f"/astrofotos/{photo_id}", status_code=303)
 
 
 @app.get("/blog")
@@ -585,7 +708,7 @@ async def blog(request: Request, page: int = 1, user: dict | None = Depends(get_
 
 @app.get("/blog/nueva")
 async def blog_new(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
-    if not user or not _has_permission(user, "blog"):
+    if not user or not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "blog_new.html",
@@ -597,9 +720,9 @@ async def blog_new(request: Request, user: dict | None = Depends(get_current_use
 async def media_list(scope: str, user: dict | None = Depends(get_current_user)) -> Any:
     if not user:
         raise HTTPException(status_code=403)
-    if scope == "blog" and not _has_permission(user, "blog"):
+    if scope == "blog" and not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
-    if scope == "activities" and not _has_permission(user, "activities"):
+    if scope == "activities" and not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
     return {"images": _list_store_images(scope)}
 
@@ -612,9 +735,9 @@ async def media_upload(
 ) -> Any:
     if not user:
         raise HTTPException(status_code=403)
-    if scope == "blog" and not _has_permission(user, "blog"):
+    if scope == "blog" and not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
-    if scope == "activities" and not _has_permission(user, "activities"):
+    if scope == "activities" and not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
     directory = _store_images_dir(scope)
     directory.mkdir(parents=True, exist_ok=True)
@@ -636,9 +759,10 @@ async def blog_new_submit(
     author_name: str | None = Form(None),
     show_image: str | None = Form(None),
     image: UploadFile | None = Form(None),
+    submission_action: str | None = Form(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user or not _has_permission(user, "blog"):
+    if not user or not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
     image_url = ""
     if image and image.filename:
@@ -648,6 +772,9 @@ async def blog_new_submit(
         file_path.write_bytes(await image.read())
         image_url = f"/static/store/blog/{filename}"
     entry_id = f"entry-{datetime.utcnow().timestamp()}"
+    should_publish = bool(
+        submission_action != "review" and _has_permission(user, "blog")
+    )
     payload = {
         "_id": entry_id,
         "title": title,
@@ -659,7 +786,7 @@ async def blog_new_submit(
         "author_email": user.get("email", ""),
         "show_author": True,
         "show_image": show_image == "on",
-        "is_hidden": False,
+        "is_hidden": not should_publish,
     }
     await db.blog_entries.insert_one(payload)
     return RedirectResponse("/blog", status_code=303)
@@ -678,8 +805,8 @@ async def blog_detail(
         raise HTTPException(status_code=404)
     can_edit = bool(
         user
-        and _has_permission(user, "blog")
-        and (user.get("is_admin") or entry.get("author_email") == user.get("email"))
+        and _has_any_permission(user, "blog")
+        and _can_edit_entry(user, "blog", entry.get("author_email"))
     )
     return templates.TemplateResponse(
         "blog_detail.html",
@@ -703,9 +830,9 @@ async def blog_edit(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "blog"):
+    if not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
-    if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "blog", entry.get("author_email")):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "blog_edit.html",
@@ -733,9 +860,9 @@ async def blog_edit_submit(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "blog"):
+    if not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
-    if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "blog", entry.get("author_email")):
         raise HTTPException(status_code=403)
     updates = {
         "title": title,
@@ -744,8 +871,11 @@ async def blog_edit_submit(
         "author_name": (author_name or "").strip(),
         "show_author": show_author == "on",
         "show_image": show_image == "on",
-        "is_hidden": is_hidden == "on",
     }
+    if _has_permission(user, "blog"):
+        updates["is_hidden"] = is_hidden == "on"
+    else:
+        updates["is_hidden"] = True
     if image and image.filename:
         filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
         file_path = STATIC_DIR / "store" / "blog" / filename
@@ -776,9 +906,9 @@ async def blog_delete(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "blog"):
+    if not _has_any_permission(user, "blog"):
         raise HTTPException(status_code=403)
-    if entry.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "blog", entry.get("author_email")):
         raise HTTPException(status_code=403)
     await db.blog_entries.delete_one({"_id": entry_id})
     return RedirectResponse("/blog", status_code=303)
@@ -819,7 +949,7 @@ async def activities(
 
 @app.get("/actividades/nueva")
 async def activities_new(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
-    if not user or not _has_permission(user, "activities"):
+    if not user or not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "activities_new.html",
@@ -838,9 +968,10 @@ async def activities_new_submit(
     author_name: str | None = Form(None),
     show_image: str | None = Form(None),
     image: UploadFile | None = Form(None),
+    submission_action: str | None = Form(None),
     user: dict | None = Depends(get_current_user),
 ) -> Any:
-    if not user or not _has_permission(user, "activities"):
+    if not user or not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
     image_url = ""
     if image and image.filename:
@@ -854,6 +985,9 @@ async def activities_new_submit(
         celebration_date = datetime.fromisoformat(celebration_at)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Fecha inválida.") from exc
+    should_publish = bool(
+        submission_action != "review" and _has_permission(user, "activities")
+    )
     payload = {
         "_id": entry_id,
         "title": title,
@@ -866,7 +1000,7 @@ async def activities_new_submit(
         "author_email": user.get("email", ""),
         "show_author": True,
         "show_image": show_image == "on",
-        "is_hidden": False,
+        "is_hidden": not should_publish,
         "is_upcoming": is_upcoming == "future",
     }
     await db.activities.insert_one(payload)
@@ -886,11 +1020,8 @@ async def activities_detail(
         raise HTTPException(status_code=404)
     can_edit = bool(
         user
-        and _has_permission(user, "activities")
-        and (
-            user.get("is_admin")
-            or activity.get("author_email") == user.get("email")
-        )
+        and _has_any_permission(user, "activities")
+        and _can_edit_entry(user, "activities", activity.get("author_email"))
     )
     return templates.TemplateResponse(
         "activities_detail.html",
@@ -914,9 +1045,9 @@ async def activities_edit(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "activities"):
+    if not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
-    if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "activities", activity.get("author_email")):
         raise HTTPException(status_code=403)
     return templates.TemplateResponse(
         "activities_edit.html",
@@ -946,9 +1077,9 @@ async def activities_edit_submit(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "activities"):
+    if not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
-    if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "activities", activity.get("author_email")):
         raise HTTPException(status_code=403)
     updates = {
         "title": title,
@@ -957,9 +1088,12 @@ async def activities_edit_submit(
         "author_name": (author_name or "").strip(),
         "show_author": show_author == "on",
         "show_image": show_image == "on",
-        "is_hidden": is_hidden == "on",
         "is_upcoming": is_upcoming == "future",
     }
+    if _has_permission(user, "activities"):
+        updates["is_hidden"] = is_hidden == "on"
+    else:
+        updates["is_hidden"] = True
     try:
         updates["celebration_at"] = datetime.fromisoformat(celebration_at)
     except ValueError as exc:
@@ -994,9 +1128,9 @@ async def activities_delete(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
-    if not _has_permission(user, "activities"):
+    if not _has_any_permission(user, "activities"):
         raise HTTPException(status_code=403)
-    if activity.get("author_email") != user.get("email") and not user.get("is_admin"):
+    if not _can_edit_entry(user, "activities", activity.get("author_email")):
         raise HTTPException(status_code=403)
     await db.activities.delete_one({"_id": activity_id})
     return RedirectResponse("/actividades", status_code=303)
@@ -1080,6 +1214,194 @@ async def profile_update_equipment(
         upsert=True,
     )
     return RedirectResponse("/perfil", status_code=303)
+
+
+def _content_sort_key(item: dict[str, Any]) -> datetime:
+    value = item.get("sort_date")
+    if isinstance(value, datetime):
+        return value
+    return datetime.min
+
+
+@app.get("/gestion-contenidos")
+async def content_management(
+    request: Request,
+    page: int = 1,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user or not (
+        user.get("is_admin")
+        or any(_has_permission(user, scope) for scope in ("photos", "blog", "activities"))
+    ):
+        raise HTTPException(status_code=403)
+
+    allowed_scopes = {
+        scope
+        for scope in ("photos", "blog", "activities")
+        if _can_manage_scope(user, scope)
+    }
+    if user.get("is_admin"):
+        allowed_scopes = {"photos", "blog", "activities"}
+
+    hidden_items: list[dict[str, Any]] = []
+    published_items: list[dict[str, Any]] = []
+
+    if "photos" in allowed_scopes:
+        async for photo in db.photos.find({"is_hidden": True}).sort("uploaded_at", -1):
+            hidden_items.append(
+                {
+                    "scope": "photos",
+                    "id": photo["_id"],
+                    "title": photo.get("name", ""),
+                    "author": photo.get("author", ""),
+                    "status_label": "Astrofotografía",
+                    "sort_date": photo.get("uploaded_at"),
+                    "date_display": _format_spanish_date(photo.get("uploaded_at")),
+                    "edit_url": f"/astrofotos/{photo['_id']}/editar",
+                }
+            )
+        async for photo in db.photos.find({"is_hidden": {"$ne": True}}).sort(
+            "uploaded_at", -1
+        ):
+            published_items.append(
+                {
+                    "scope": "photos",
+                    "id": photo["_id"],
+                    "title": photo.get("name", ""),
+                    "author": photo.get("author", ""),
+                    "status_label": "Astrofotografía",
+                    "sort_date": photo.get("uploaded_at"),
+                    "date_display": _format_spanish_date(photo.get("uploaded_at")),
+                    "edit_url": f"/astrofotos/{photo['_id']}/editar",
+                }
+            )
+
+    if "blog" in allowed_scopes:
+        async for entry in db.blog_entries.find({"is_hidden": True}).sort("published_at", -1):
+            hidden_items.append(
+                {
+                    "scope": "blog",
+                    "id": entry["_id"],
+                    "title": entry.get("title", ""),
+                    "author": entry.get("author_name") or entry.get("author_email", ""),
+                    "status_label": "Blog",
+                    "sort_date": entry.get("published_at"),
+                    "date_display": _format_spanish_date(entry.get("published_at")),
+                    "edit_url": f"/blog/{entry['_id']}/editar",
+                }
+            )
+        async for entry in db.blog_entries.find({"is_hidden": {"$ne": True}}).sort(
+            "published_at", -1
+        ):
+            published_items.append(
+                {
+                    "scope": "blog",
+                    "id": entry["_id"],
+                    "title": entry.get("title", ""),
+                    "author": entry.get("author_name") or entry.get("author_email", ""),
+                    "status_label": "Blog",
+                    "sort_date": entry.get("published_at"),
+                    "date_display": _format_spanish_date(entry.get("published_at")),
+                    "edit_url": f"/blog/{entry['_id']}/editar",
+                }
+            )
+
+    if "activities" in allowed_scopes:
+        async for activity in db.activities.find({"is_hidden": True}).sort("published_at", -1):
+            hidden_items.append(
+                {
+                    "scope": "activities",
+                    "id": activity["_id"],
+                    "title": activity.get("title", ""),
+                    "author": activity.get("author_name") or activity.get("author_email", ""),
+                    "status_label": "Noticias",
+                    "sort_date": activity.get("published_at"),
+                    "date_display": _format_spanish_date(activity.get("published_at")),
+                    "edit_url": f"/actividades/{activity['_id']}/editar",
+                }
+            )
+        async for activity in db.activities.find({"is_hidden": {"$ne": True}}).sort(
+            "published_at", -1
+        ):
+            published_items.append(
+                {
+                    "scope": "activities",
+                    "id": activity["_id"],
+                    "title": activity.get("title", ""),
+                    "author": activity.get("author_name") or activity.get("author_email", ""),
+                    "status_label": "Noticias",
+                    "sort_date": activity.get("published_at"),
+                    "date_display": _format_spanish_date(activity.get("published_at")),
+                    "edit_url": f"/actividades/{activity['_id']}/editar",
+                }
+            )
+
+    hidden_items.sort(key=_content_sort_key, reverse=True)
+    published_items.sort(key=_content_sort_key, reverse=True)
+
+    per_page = 10
+    total_pages = max(1, (len(published_items) + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    start_index = (page - 1) * per_page
+    paginated_published = published_items[start_index : start_index + per_page]
+
+    return templates.TemplateResponse(
+        "content_management.html",
+        {
+            "request": request,
+            "user": user,
+            "hidden_items": hidden_items,
+            "published_items": paginated_published,
+            "page": page,
+            "total_pages": total_pages,
+        },
+    )
+
+
+@app.post("/gestion-contenidos/{scope}/{entry_id}/visibilidad")
+async def content_toggle_visibility(
+    scope: str,
+    entry_id: str,
+    visibility: str = Form(...),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not _can_manage_scope(user, scope):
+        raise HTTPException(status_code=403)
+    is_hidden = visibility == "hide"
+    if scope == "photos":
+        await db.photos.update_one({"_id": entry_id}, {"$set": {"is_hidden": is_hidden}})
+    elif scope == "blog":
+        updates = {"is_hidden": is_hidden}
+        if not is_hidden:
+            updates["published_at"] = datetime.utcnow()
+        await db.blog_entries.update_one({"_id": entry_id}, {"$set": updates})
+    elif scope == "activities":
+        updates = {"is_hidden": is_hidden}
+        if not is_hidden:
+            updates["published_at"] = datetime.utcnow()
+        await db.activities.update_one({"_id": entry_id}, {"$set": updates})
+    else:
+        raise HTTPException(status_code=404)
+    return RedirectResponse("/gestion-contenidos", status_code=303)
+
+
+@app.post("/gestion-contenidos/{scope}/{entry_id}/eliminar")
+async def content_delete(
+    scope: str,
+    entry_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not _can_manage_scope(user, scope):
+        raise HTTPException(status_code=403)
+    if scope == "photos":
+        await db.photos.delete_one({"_id": entry_id})
+    elif scope == "blog":
+        await db.blog_entries.delete_one({"_id": entry_id})
+    elif scope == "activities":
+        await db.activities.delete_one({"_id": entry_id})
+    else:
+        raise HTTPException(status_code=404)
+    return RedirectResponse("/gestion-contenidos", status_code=303)
 
 
 @app.post("/contacto")
@@ -1202,14 +1524,20 @@ async def admin_delete(request_id: str, user: dict = Depends(require_admin)) -> 
 async def admin_update_permissions(
     user_id: str,
     photos: str | None = Form(None),
+    photos_supervised: str | None = Form(None),
     blog: str | None = Form(None),
+    blog_supervised: str | None = Form(None),
     activities: str | None = Form(None),
+    activities_supervised: str | None = Form(None),
     user: dict = Depends(require_admin),
 ) -> Any:
     permissions = {
         "photos": photos == "on",
+        "photos_supervised": photos_supervised == "on",
         "blog": blog == "on",
+        "blog_supervised": blog_supervised == "on",
         "activities": activities == "on",
+        "activities_supervised": activities_supervised == "on",
     }
     await db.users.update_one(
         {"_id": _parse_object_id(user_id)},

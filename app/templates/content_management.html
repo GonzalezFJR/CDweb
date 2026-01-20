@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <div class="section-header">
+    <h1>Gestión de contenidos</h1>
+    <p class="muted">Revisa las publicaciones pendientes y gestiona el contenido publicado.</p>
+  </div>
+  <h2>Material oculto pendiente de revisión</h2>
+  <div class="table">
+    <div class="table-row table-header">
+      <span>Tipo</span>
+      <span>Título</span>
+      <span>Autor</span>
+      <span>Fecha</span>
+      <span>Acciones</span>
+    </div>
+    {% for item in hidden_items %}
+    <div class="table-row">
+      <span>{{ item.status_label }}</span>
+      <span>{{ item.title }}</span>
+      <span>{{ item.author }}</span>
+      <span>{{ item.date_display }}</span>
+      <span class="actions">
+        <a class="button ghost small" href="{{ item.edit_url }}">Editar</a>
+        <form method="post" action="/gestion-contenidos/{{ item.scope }}/{{ item.id }}/visibilidad">
+          <input type="hidden" name="visibility" value="show" />
+          <button class="button ghost small" type="submit">Publicar</button>
+        </form>
+        <form method="post" action="/gestion-contenidos/{{ item.scope }}/{{ item.id }}/eliminar">
+          <button class="button ghost small" type="submit">Eliminar</button>
+        </form>
+      </span>
+    </div>
+    {% else %}
+    <p class="muted">No hay publicaciones pendientes.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section container reveal">
+  <h2>Material publicado</h2>
+  <div class="table">
+    <div class="table-row table-header">
+      <span>Tipo</span>
+      <span>Título</span>
+      <span>Autor</span>
+      <span>Fecha</span>
+      <span>Acciones</span>
+    </div>
+    {% for item in published_items %}
+    <div class="table-row">
+      <span>{{ item.status_label }}</span>
+      <span>{{ item.title }}</span>
+      <span>{{ item.author }}</span>
+      <span>{{ item.date_display }}</span>
+      <span class="actions">
+        <a class="button ghost small" href="{{ item.edit_url }}">Editar</a>
+        <form method="post" action="/gestion-contenidos/{{ item.scope }}/{{ item.id }}/visibilidad">
+          <input type="hidden" name="visibility" value="hide" />
+          <button class="button ghost small" type="submit">Ocultar</button>
+        </form>
+        <form method="post" action="/gestion-contenidos/{{ item.scope }}/{{ item.id }}/eliminar">
+          <button class="button ghost small" type="submit">Eliminar</button>
+        </form>
+      </span>
+    </div>
+    {% else %}
+    <p class="muted">Todavía no hay material publicado.</p>
+    {% endfor %}
+  </div>
+  <div class="pagination">
+    {% if page > 1 %}
+    <a class="button ghost" href="/gestion-contenidos?page={{ page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page }} de {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a class="button ghost" href="/gestion-contenidos?page={{ page + 1 }}">Siguiente</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

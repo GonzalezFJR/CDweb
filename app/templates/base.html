@@ -25,6 +25,9 @@
         {% if request.session.get('is_admin') %}
         <a href="/admin/solicitudes" class="nav-link admin-link">Gestión de usuarios</a>
         {% endif %}
+        {% if user and (user.is_admin or user.permissions.photos or user.permissions.blog or user.permissions.activities) %}
+        <a href="/gestion-contenidos" class="nav-link admin-link">Gestión de contenidos</a>
+        {% endif %}
         {% if request.session.get('user_email') %}
         <a href="/perfil" class="nav-link member-link">Mi perfil</a>
         <a href="/logout" class="nav-link member-link">Logout</a>
