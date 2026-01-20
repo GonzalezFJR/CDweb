@@ -19,7 +19,6 @@ from app.db import db, ensure_indexes
 from app.email_utils import send_email
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -61,6 +60,9 @@ async def construction_guard(request: Request, call_next: Any) -> Any:
         "construction.html",
         {"request": request, "image_url": CONSTRUCTION_IMAGE_URL},
     )
+
+
+app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 
 SPANISH_MONTHS = {
     1: "enero",
