@@ -45,12 +45,24 @@
             Astrofotos
           </label>
           <label class="checkbox">
+            <input type="checkbox" name="photos_supervised" {% if registered_user.permissions.photos_supervised %}checked{% endif %} />
+            Astrofotos con supervisión
+          </label>
+          <label class="checkbox">
             <input type="checkbox" name="blog" {% if registered_user.permissions.blog %}checked{% endif %} />
             Blog
           </label>
           <label class="checkbox">
+            <input type="checkbox" name="blog_supervised" {% if registered_user.permissions.blog_supervised %}checked{% endif %} />
+            Blog con supervisión
+          </label>
+          <label class="checkbox">
             <input type="checkbox" name="activities" {% if registered_user.permissions.activities %}checked{% endif %} />
             Actividades
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="activities_supervised" {% if registered_user.permissions.activities_supervised %}checked{% endif %} />
+            Noticias con supervisión
           </label>
           <button class="button ghost small" type="submit">Guardar</button>
         </form>

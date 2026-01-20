@@ -41,11 +41,13 @@
       <span class="rich-editor__switch-slider"></span>
       <span class="rich-editor__switch-text">Mostrar imagen principal en la entrada</span>
     </label>
+    {% if user.permissions.activities %}
     <label class="rich-editor__switch">
       <input type="checkbox" class="rich-editor__toggle-input" name="is_hidden" {% if activity.is_hidden %}checked{% endif %} />
       <span class="rich-editor__switch-slider"></span>
       <span class="rich-editor__switch-text">Marcar como oculta</span>
     </label>
+    {% endif %}
     {% if user.is_admin %}
     <label>Fecha de publicación
       <input type="datetime-local" name="published_at" value="{{ activity.published_at_input }}" />
