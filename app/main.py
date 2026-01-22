@@ -193,7 +193,8 @@ def _list_store_images(scope: str) -> list[str]:
             f"/static/store/{scope}/{path.name}"
             for path in directory.iterdir()
             if path.is_file()
-        ]
+        ],
+        reverse=True,
     )
 
 
@@ -785,6 +786,32 @@ async def media_upload(
         filename = f"{datetime.utcnow().timestamp()}_{image.filename}"
         file_path = directory / filename
         file_path.write_bytes(await image.read())
+    return {"images": _list_store_images(scope)}
+
+
+@app.post("/media/{scope}/delete")
+async def media_delete(
+    scope: str,
+    request: Request,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user:
+        raise HTTPException(status_code=403)
+    if scope == "blog" and not _has_any_permission(user, "blog"):
+        raise HTTPException(status_code=403)
+    if scope == "activities" and not _has_any_permission(user, "activities"):
+        raise HTTPException(status_code=403)
+    payload = await request.json()
+    url = (payload or {}).get("url", "")
+    filename = Path(url).name if url else ""
+    if not filename:
+        raise HTTPException(status_code=400)
+    directory = _store_images_dir(scope).resolve()
+    target = (directory / filename).resolve()
+    if directory not in target.parents and target != directory:
+        raise HTTPException(status_code=400)
+    if target.exists():
+        target.unlink()
     return {"images": _list_store_images(scope)}
 
 

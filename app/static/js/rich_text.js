@@ -239,12 +239,78 @@ document.addEventListener('DOMContentLoaded', () => {
     let loaded = false;
     let images = [];
     let currentPage = 1;
+    let deleteDialog = null;
+    let deleteTarget = '';
     const pageSize = 20;
 
     const updateInsertState = () => {
       if (insertButton) {
         insertButton.disabled = selected.size === 0;
       }
+    };
+
+    const closeDeleteDialog = () => {
+      if (!deleteDialog) {
+        return;
+      }
+      deleteDialog.classList.remove('is-active');
+      deleteTarget = '';
+    };
+
+    const getDeleteDialog = () => {
+      if (deleteDialog) {
+        return deleteDialog;
+      }
+      deleteDialog = document.createElement('div');
+      deleteDialog.className = 'image-gallery__confirm';
+      deleteDialog.innerHTML = `
+        <div class="image-gallery__confirm-card" role="dialog" aria-modal="true" aria-label="Confirmar borrado">
+          <p>¿Seguro que quieres borrar esta foto? Ten en cuenta que si se está usando en cualquier lugar de la página (blog, actividad...) dejará de ser visible.</p>
+          <div class="image-gallery__confirm-actions">
+            <button type="button" class="button ghost" data-confirm-cancel>Volver</button>
+            <button type="button" class="button danger" data-confirm-delete>Borrar</button>
+          </div>
+        </div>
+      `;
+      deleteDialog.addEventListener('click', (event) => {
+        if (event.target === deleteDialog) {
+          closeDeleteDialog();
+        }
+      });
+      const cancelButton = deleteDialog.querySelector('[data-confirm-cancel]');
+      cancelButton?.addEventListener('click', closeDeleteDialog);
+      const confirmButton = deleteDialog.querySelector('[data-confirm-delete]');
+      confirmButton?.addEventListener('click', async () => {
+        if (!deleteTarget || !scope) {
+          closeDeleteDialog();
+          return;
+        }
+        const response = await fetch(`/media/${scope}/delete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: deleteTarget }),
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          selected.delete(deleteTarget);
+          updateInsertState();
+          setImages(payload.images || []);
+        }
+        closeDeleteDialog();
+      });
+      document.body.appendChild(deleteDialog);
+      return deleteDialog;
+    };
+
+    const openDeleteDialog = (url) => {
+      if (!url) {
+        return;
+      }
+      deleteTarget = url;
+      const dialog = getDeleteDialog();
+      dialog.classList.add('is-active');
     };
 
     const renderPagination = (totalPages) => {
@@ -295,7 +361,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = document.createElement('img');
         img.src = url;
         img.alt = 'Imagen disponible';
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'image-gallery__delete';
+        deleteButton.setAttribute('aria-label', 'Borrar imagen');
+        deleteButton.innerHTML = `
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M9 3h6l1 2h5v2h-2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H3V5h5l1-2zm-2 4v12h10V7H7zm3 2h2v8h-2V9zm4 0h2v8h-2V9z"></path>
+          </svg>
+        `;
+        deleteButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          openDeleteDialog(url);
+        });
         item.appendChild(img);
+        item.appendChild(deleteButton);
         if (selected.has(url)) {
           item.classList.add('is-selected');
         }
