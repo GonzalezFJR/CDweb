@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from pathlib import Path
 from random import choice
 from typing import Any
@@ -10,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from bson import ObjectId
 from bson.errors import InvalidId
+from passlib.hash import bcrypt
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -19,6 +21,8 @@ from app.db import db, ensure_indexes
 from app.email_utils import send_email
 
 app = FastAPI()
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -1486,8 +1490,14 @@ async def register_submit(
             {"request": request, "register_error": "Solicitud ya enviada."},
         )
     request_id = f"req-{datetime.utcnow().timestamp()}"
+    password_hash = bcrypt.hash(password)
     await db.pending_registrations.insert_one(
-        {"_id": request_id, "email": email, "requested_at": datetime.utcnow()}
+        {
+            "_id": request_id,
+            "email": email,
+            "password_hash": password_hash,
+            "requested_at": datetime.utcnow(),
+        }
     )
     send_email(
         "Solicitud de registro",
@@ -1525,13 +1535,33 @@ async def admin_requests(request: Request, user: dict = Depends(require_admin)) 
 async def admin_approve(request_id: str, user: dict = Depends(require_admin)) -> Any:
     pending = await db.pending_registrations.find_one({"_id": request_id})
     if pending:
-        temp_password = "temporal"
-        await create_user(pending["email"], temp_password)
-        send_email(
-            "Cuenta aprobada",
-            "Tu cuenta ha sido aprobada. Usa la contraseña temporal 'temporal' y cámbiala al acceder.",
-            pending["email"],
-        )
+        password_hash = pending.get("password_hash")
+        if password_hash:
+            await db.users.insert_one(
+                {
+                    "email": pending["email"],
+                    "password_hash": password_hash,
+                    "is_admin": False,
+                    "permissions": _default_permissions(),
+                }
+            )
+            send_email(
+                "Cuenta aprobada",
+                "Tu cuenta ha sido aprobada. Ya puedes acceder con la contraseña que registraste.",
+                pending["email"],
+            )
+        else:
+            logger.warning(
+                "Pending registration %s missing password hash; assigning temporary password.",
+                request_id,
+            )
+            temp_password = "temporal"
+            await create_user(pending["email"], temp_password)
+            send_email(
+                "Cuenta aprobada",
+                "Tu cuenta ha sido aprobada. Usa la contraseña temporal 'temporal' y cámbiala al acceder.",
+                pending["email"],
+            )
         await db.pending_registrations.delete_one({"_id": request_id})
     return RedirectResponse("/admin/solicitudes", status_code=303)
 
