@@ -433,11 +433,9 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
         "request": request,
         "home_images": _list_home_images(),
         "photos": await _fetch_recent_photos(include_hidden=bool(user)),
-        "upcoming_activities": await _fetch_upcoming_activities(include_hidden=bool(user)),
-        "recent_activities": await _fetch_recent_past_activities(
-            include_hidden=bool(user)
-        ),
-        "blog_entries": await _fetch_recent_blog_entries(include_hidden=bool(user)),
+        "upcoming_activities": await _fetch_upcoming_activities(include_hidden=False),
+        "recent_activities": await _fetch_recent_past_activities(include_hidden=False),
+        "blog_entries": await _fetch_recent_blog_entries(include_hidden=False),
         "user": user,
     }
     return templates.TemplateResponse("index.html", context)
@@ -708,24 +706,34 @@ async def blog(request: Request, page: int = 1, user: dict | None = Depends(get_
     per_page = 5
     skip = (page - 1) * per_page
     entries_cursor = (
-        db.blog_entries.find(_publication_filter(bool(user)))
+        db.blog_entries.find(_publication_filter(False))
         .sort("published_at", -1)
         .skip(skip)
         .limit(per_page)
     )
     entries = [_prepare_publication_entry(entry) async for entry in entries_cursor]
-    total_entries = await db.blog_entries.count_documents(_publication_filter(bool(user)))
+    total_entries = await db.blog_entries.count_documents(_publication_filter(False))
     total_pages = max(1, (total_entries + per_page - 1) // per_page)
-    latest_entries = await _fetch_recent_blog_entries(limit=3, include_hidden=bool(user))
+    latest_entries = await _fetch_recent_blog_entries(limit=3, include_hidden=False)
+    can_manage_drafts = bool(user and _has_permission(user, "blog"))
+    draft_entries: list[dict[str, Any]] = []
+    if user:
+        draft_filter: dict[str, Any] = {"is_hidden": True}
+        if not can_manage_drafts:
+            draft_filter["author_email"] = user.get("email")
+        drafts_cursor = db.blog_entries.find(draft_filter).sort("published_at", -1)
+        draft_entries = [_prepare_publication_entry(entry) async for entry in drafts_cursor]
     return templates.TemplateResponse(
         "blog.html",
         {
             "request": request,
             "entries": entries,
             "latest_entries": latest_entries,
+            "draft_entries": draft_entries,
             "page": page,
             "total_pages": total_pages,
             "user": user,
+            "can_manage_drafts": can_manage_drafts,
         },
     )
 
@@ -825,8 +833,11 @@ async def blog_detail(
     entry = await db.blog_entries.find_one({"_id": entry_id})
     if not entry:
         raise HTTPException(status_code=404)
-    if entry.get("is_hidden") and not user:
-        raise HTTPException(status_code=404)
+    if entry.get("is_hidden"):
+        can_manage = bool(user and _has_permission(user, "blog"))
+        is_owner = bool(user and entry.get("author_email") == user.get("email"))
+        if not (can_manage or is_owner):
+            raise HTTPException(status_code=404)
     can_edit = bool(
         user
         and _has_any_permission(user, "blog")
@@ -938,6 +949,20 @@ async def blog_delete(
     return RedirectResponse("/blog", status_code=303)
 
 
+@app.post("/blog/{entry_id}/publicar")
+async def blog_publish(
+    entry_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user or not _has_permission(user, "blog"):
+        raise HTTPException(status_code=403)
+    await db.blog_entries.update_one(
+        {"_id": entry_id},
+        {"$set": {"is_hidden": False}},
+    )
+    return RedirectResponse("/blog", status_code=303)
+
+
 @app.get("/actividades")
 async def activities(
     request: Request,
@@ -947,26 +972,38 @@ async def activities(
     per_page = 5
     skip = (page - 1) * per_page
     activities_cursor = (
-        db.activities.find(_activity_filter(bool(user), is_upcoming=False))
+        db.activities.find(_activity_filter(False, is_upcoming=False))
         .sort("celebration_at", -1)
         .skip(skip)
         .limit(per_page)
     )
     activity_entries = [_prepare_publication_entry(activity) async for activity in activities_cursor]
     total_entries = await db.activities.count_documents(
-        _activity_filter(bool(user), is_upcoming=False)
+        _activity_filter(False, is_upcoming=False)
     )
     total_pages = max(1, (total_entries + per_page - 1) // per_page)
-    upcoming_entries = await _fetch_upcoming_activities(include_hidden=bool(user))
+    upcoming_entries = await _fetch_upcoming_activities(include_hidden=False)
+    can_manage_drafts = bool(user and _has_permission(user, "activities"))
+    draft_entries: list[dict[str, Any]] = []
+    if user:
+        draft_filter: dict[str, Any] = {"is_hidden": True}
+        if not can_manage_drafts:
+            draft_filter["author_email"] = user.get("email")
+        drafts_cursor = db.activities.find(draft_filter).sort("celebration_at", -1)
+        draft_entries = [
+            _prepare_publication_entry(activity) async for activity in drafts_cursor
+        ]
     return templates.TemplateResponse(
         "activities.html",
         {
             "request": request,
             "entries": activity_entries,
             "upcoming_entries": upcoming_entries,
+            "draft_entries": draft_entries,
             "page": page,
             "total_pages": total_pages,
             "user": user,
+            "can_manage_drafts": can_manage_drafts,
         },
     )
 
@@ -1040,8 +1077,11 @@ async def activities_detail(
     activity = await db.activities.find_one({"_id": activity_id})
     if not activity:
         raise HTTPException(status_code=404)
-    if activity.get("is_hidden") and not user:
-        raise HTTPException(status_code=404)
+    if activity.get("is_hidden"):
+        can_manage = bool(user and _has_permission(user, "activities"))
+        is_owner = bool(user and activity.get("author_email") == user.get("email"))
+        if not (can_manage or is_owner):
+            raise HTTPException(status_code=404)
     can_edit = bool(
         user
         and _has_any_permission(user, "activities")
@@ -1157,6 +1197,20 @@ async def activities_delete(
     if not _can_edit_entry(user, "activities", activity.get("author_email")):
         raise HTTPException(status_code=403)
     await db.activities.delete_one({"_id": activity_id})
+    return RedirectResponse("/actividades", status_code=303)
+
+
+@app.post("/actividades/{activity_id}/publicar")
+async def activities_publish(
+    activity_id: str,
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user or not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
+    await db.activities.update_one(
+        {"_id": activity_id},
+        {"$set": {"is_hidden": False}},
+    )
     return RedirectResponse("/actividades", status_code=303)
 
 

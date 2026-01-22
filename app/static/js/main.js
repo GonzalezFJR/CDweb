@@ -57,9 +57,11 @@ const setupNavToggle = () => {
 const setupRegisterToggle = () => {
   const trigger = document.querySelector("[data-toggle='register-form']");
   const form = document.getElementById("register-form");
-  if (!trigger || !form) return;
+  const loginForm = document.getElementById("login-form");
+  if (!trigger || !form || !loginForm) return;
   trigger.addEventListener("click", () => {
     form.classList.toggle("hidden");
+    loginForm.classList.toggle("hidden");
   });
 };
 

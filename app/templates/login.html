@@ -6,14 +6,14 @@
   {% if error %}
   <div class="alert error">{{ error }}</div>
   {% endif %}
-  <form class="form" method="post">
+  <form id="login-form" class="form" method="post">
     <label>Email
       <input type="email" name="email" required />
     </label>
     <label>Contraseña
       <input type="password" name="password" required />
     </label>
-    <button class="button" type="submit">Entrar</button>
+    <button class="button login-submit" type="submit">Entrar</button>
   </form>
   <form id="register-form" class="form hidden" method="post" action="/registro">
     {% if register_error %}

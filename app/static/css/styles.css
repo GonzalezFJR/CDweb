@@ -445,6 +445,10 @@ img {
   box-shadow: 0 8px 24px rgba(242, 109, 109, 0.35);
 }
 
+.login-submit {
+  margin-bottom: 1.5rem;
+}
+
 .form {
   display: grid;
   gap: 1rem;
@@ -1351,6 +1355,11 @@ select:focus {
   border-radius: 10px;
 }
 
+.table-row.users-table {
+  grid-template-columns: 1.5fr 3fr 1fr;
+  align-items: start;
+}
+
 .table-header {
   font-weight: 600;
   background: var(--surface-light);
@@ -1359,6 +1368,33 @@ select:focus {
 .actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.permissions-grid--header {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.permissions-column {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.permissions-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.permissions-switch {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .hidden {
