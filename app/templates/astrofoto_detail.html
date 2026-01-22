@@ -18,9 +18,6 @@
     <div class="photo-meta">
       <ul>
         <li><strong>Autor:</strong> {{ photo.author }}</li>
-        {% if photo.uploaded_by %}
-        <li><strong>Subida por:</strong> {{ photo.uploaded_by }}</li>
-        {% endif %}
         <li><strong>Fecha de publicación:</strong> {{ photo.uploaded_at_display }}</li>
         {% if photo.characteristics or photo.exposure_time %}
         <li><strong>Características:</strong> {{ photo.characteristics or photo.exposure_time }}</li>

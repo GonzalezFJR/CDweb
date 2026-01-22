@@ -11,11 +11,10 @@
       <input type="text" name="name" value="{{ photo.name }}" required />
     </label>
     <label>Características
-      <input type="text" name="characteristics" value="{{ photo.characteristics }}" />
-      <span class="muted">Tiempo de exposición, filtros...</span>
+      <textarea name="characteristics" rows="3">{{ photo.characteristics }}</textarea>
     </label>
     <label>Equipo usado
-      <input type="text" name="equipment" value="{{ photo.equipment }}" />
+      <textarea name="equipment" rows="3">{{ photo.equipment }}</textarea>
     </label>
     <label>Descripción
       <textarea name="description" rows="3">{{ photo.description }}</textarea>
