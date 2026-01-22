@@ -290,11 +290,15 @@ def _activity_filter(include_hidden: bool, is_upcoming: bool | None = None) -> d
     return filters
 
 
-async def _fetch_upcoming_activities(include_hidden: bool = False) -> list[dict[str, Any]]:
-    cursor = (
-        db.activities.find(_activity_filter(include_hidden, is_upcoming=True))
-        .sort("celebration_at", 1)
+async def _fetch_upcoming_activities(
+    include_hidden: bool = False,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    cursor = db.activities.find(_activity_filter(include_hidden, is_upcoming=True)).sort(
+        "celebration_at", 1
     )
+    if limit is not None:
+        cursor = cursor.limit(limit)
     return [_prepare_publication_entry(activity) async for activity in cursor]
 
 
@@ -433,7 +437,9 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
         "request": request,
         "home_images": _list_home_images(),
         "photos": await _fetch_recent_photos(include_hidden=bool(user)),
-        "upcoming_activities": await _fetch_upcoming_activities(include_hidden=False),
+        "upcoming_activities": await _fetch_upcoming_activities(
+            include_hidden=False, limit=3
+        ),
         "recent_activities": await _fetch_recent_past_activities(include_hidden=False),
         "blog_entries": await _fetch_recent_blog_entries(include_hidden=False),
         "user": user,

@@ -379,12 +379,20 @@ img {
   transition: transform 0.3s ease;
 }
 
+.cards .card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
 .placeholder-card {
   border: 1px dashed rgba(246, 178, 107, 0.35);
 }
 
 .placeholder-thumb {
-  height: 160px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   background: linear-gradient(135deg, rgba(246, 178, 107, 0.12), transparent);
 }
 
@@ -811,6 +819,13 @@ select:focus {
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.3s ease;
+}
+
+.photo-card:not(.photo-card--compact) img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 
 .photo-card:hover {
