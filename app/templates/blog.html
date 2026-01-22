@@ -16,9 +16,6 @@
       {% endif %}
       <div class="card-content">
         <h3>{{ entry.title }}</h3>
-        {% if user and entry.is_hidden %}
-        <span class="visibility-badge">Oculto</span>
-        {% endif %}
         {% if entry.published_at_display %}
         <p class="card-meta">
           {{ entry.published_at_display }}{% if entry.show_author and entry.author_name %}, publicado por {{ entry.author_name }}{% endif %}
@@ -49,9 +46,6 @@
     <article class="blog-item">
       <div>
         <h3>{{ entry.title }}</h3>
-        {% if user and entry.is_hidden %}
-        <span class="visibility-badge">Oculto</span>
-        {% endif %}
         <p>{{ entry.summary }}</p>
       </div>
       <a class="button ghost" href="/blog/{{ entry._id }}">Ver entrada</a>
@@ -78,4 +72,33 @@
     {% endif %}
   </div>
 </section>
+
+{% if draft_entries %}
+<section class="section container reveal">
+  <h2>Borradores</h2>
+  <div class="blog-list">
+    {% for entry in draft_entries %}
+    <article class="blog-item">
+      <div>
+        <h3>{{ entry.title }}</h3>
+        <span class="visibility-badge">Oculto</span>
+        <p>{{ entry.summary }}</p>
+      </div>
+      <div class="actions">
+        <a class="button ghost" href="/blog/{{ entry._id }}">Ver</a>
+        {% if can_manage_drafts %}
+        <a class="button ghost" href="/blog/{{ entry._id }}/editar">Editar</a>
+        <form method="post" action="/blog/{{ entry._id }}/publicar">
+          <button class="button ghost" type="submit">Publicar</button>
+        </form>
+        <form method="post" action="/blog/{{ entry._id }}/eliminar" onsubmit="return confirm('¿Seguro que quieres eliminar esta entrada?');">
+          <button class="button ghost" type="submit">Eliminar</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}
