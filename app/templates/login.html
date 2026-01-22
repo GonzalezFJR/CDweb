@@ -15,15 +15,9 @@
     </label>
     <button class="button" type="submit">Entrar</button>
   </form>
-  <div class="toggle-section">
-    <button class="button ghost" type="button" data-toggle="register-form">Regístrate</button>
-  </div>
   <form id="register-form" class="form hidden" method="post" action="/registro">
     {% if register_error %}
     <div class="alert error">{{ register_error }}</div>
-    {% endif %}
-    {% if register_success %}
-    <div class="alert success">Solicitud enviada. Espera la validación del administrador.</div>
     {% endif %}
     <p class="muted">El registro es solo para socios. Una vez enviado, el administrador activará tu cuenta.</p>
     <label>Email
@@ -37,5 +31,9 @@
     </label>
     <button class="button" type="submit">Enviar solicitud</button>
   </form>
+  <div class="toggle-section">
+    <p class="muted">¿Eres socio y no tienes cuenta en esta web?</p>
+    <button class="button ghost" type="button" data-toggle="register-form">Regístrate</button>
+  </div>
 </section>
 {% endblock %}
