@@ -26,7 +26,14 @@ async def create_user(email: str, password: str) -> dict:
         "email": email,
         "password_hash": password_hash,
         "is_admin": False,
-        "permissions": {"photos": False, "blog": False, "activities": False},
+        "permissions": {
+            "photos": False,
+            "blog": False,
+            "activities": False,
+            "photos_supervised": False,
+            "blog_supervised": False,
+            "activities_supervised": False,
+        },
     }
     await db.users.insert_one(user)
     return user

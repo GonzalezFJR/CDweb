@@ -57,9 +57,11 @@ const setupNavToggle = () => {
 const setupRegisterToggle = () => {
   const trigger = document.querySelector("[data-toggle='register-form']");
   const form = document.getElementById("register-form");
-  if (!trigger || !form) return;
+  const loginForm = document.getElementById("login-form");
+  if (!trigger || !form || !loginForm) return;
   trigger.addEventListener("click", () => {
     form.classList.toggle("hidden");
+    loginForm.classList.toggle("hidden");
   });
 };
 
@@ -141,7 +143,7 @@ const setupAstrofotoGalleryFilters = () => {
   const pagination = document.querySelector("[data-astrofoto-pagination]");
   const toggleButton = document.querySelector("[data-astrofoto-filter-toggle]");
   const filters = document.querySelector("[data-astrofoto-filters]");
-  const pageSize = 16;
+  const pageSize = 24;
 
   const normalize = (value) => (value || "").trim().toLowerCase();
 

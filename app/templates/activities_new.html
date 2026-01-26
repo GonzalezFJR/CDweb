@@ -66,7 +66,12 @@
         <div class="image-gallery__pagination" data-gallery-pagination></div>
       </div>
     </div>
-    <button class="button" type="submit">Publicar actividad</button>
+    <div class="form-actions">
+      {% if user.permissions.activities %}
+      <button class="button" type="submit" name="submission_action" value="publish">Publicar actividad</button>
+      {% endif %}
+      <button class="button ghost" type="submit" name="submission_action" value="review">Enviar para revisión</button>
+    </div>
   </form>
 </section>
 {% endblock %}

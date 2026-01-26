@@ -25,6 +25,9 @@
         {% if request.session.get('is_admin') %}
         <a href="/admin/solicitudes" class="nav-link admin-link">Gestión de usuarios</a>
         {% endif %}
+        {% if user and (user.is_admin or user.permissions.photos or user.permissions.blog or user.permissions.activities) %}
+        <a href="/gestion-contenidos" class="nav-link admin-link">Gestión de contenidos</a>
+        {% endif %}
         {% if request.session.get('user_email') %}
         <a href="/perfil" class="nav-link member-link">Mi perfil</a>
         <a href="/logout" class="nav-link member-link">Logout</a>
@@ -42,7 +45,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p>© 2026 Asociación Cielos Despejados.</p>
+      <p>© 2026 Asociación Astronómica Cielos Despejados.</p>
       <div class="social-footer">
         <span class="social-footer__label">Nuestras redes sociales</span>
         <div class="social-links">

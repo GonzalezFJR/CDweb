@@ -379,12 +379,20 @@ img {
   transition: transform 0.3s ease;
 }
 
+.cards .card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
 .placeholder-card {
   border: 1px dashed rgba(246, 178, 107, 0.35);
 }
 
 .placeholder-thumb {
-  height: 160px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   background: linear-gradient(135deg, rgba(246, 178, 107, 0.12), transparent);
 }
 
@@ -443,6 +451,10 @@ img {
 
 .button.danger:hover {
   box-shadow: 0 8px 24px rgba(242, 109, 109, 0.35);
+}
+
+.login-submit {
+  margin-bottom: 1.5rem;
 }
 
 .form {
@@ -696,6 +708,79 @@ img {
   object-fit: cover;
 }
 
+.image-gallery__delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.75);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.image-gallery__delete svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.image-gallery__item:hover .image-gallery__delete,
+.image-gallery__delete:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.image-gallery__confirm {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 10, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 60;
+}
+
+.image-gallery__confirm.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.image-gallery__confirm-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  max-width: 460px;
+  width: calc(100% - 2rem);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  display: grid;
+  gap: 1rem;
+}
+
+.image-gallery__confirm-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.image-gallery__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .lightbox-overlay {
   position: fixed;
   inset: 0;
@@ -807,6 +892,13 @@ select:focus {
   border-radius: 14px;
   overflow: hidden;
   transition: transform 0.3s ease;
+}
+
+.photo-card:not(.photo-card--compact) img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 
 .photo-card:hover {
@@ -1351,6 +1443,11 @@ select:focus {
   border-radius: 10px;
 }
 
+.table-row.users-table {
+  grid-template-columns: 1.5fr 3fr 1fr;
+  align-items: start;
+}
+
 .table-header {
   font-weight: 600;
   background: var(--surface-light);
@@ -1359,6 +1456,33 @@ select:focus {
 .actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.permissions-grid--header {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.permissions-column {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.permissions-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.permissions-switch {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .hidden {

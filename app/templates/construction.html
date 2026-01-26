@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web en construcción</title>
+  <link rel="icon" href="/static/store/page/favicon.ico" />
+  <style>
+    body {
+      margin: 0;
+      background: #0d0f17;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    img {
+      max-width: min(1200px, 95vw);
+      max-height: 90vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <img src="{{ image_url }}" alt="Web en construcción" />
+</body>
+</html>

@@ -4,7 +4,7 @@
 <section class="section container reveal">
   <div class="section-header">
     <h1>Actividades</h1>
-    {% if user and user.permissions.activities %}
+    {% if user and (user.permissions.activities or user.permissions.activities_supervised) %}
     <a class="button" href="/actividades/nueva">Nueva actividad</a>
     {% endif %}
   </div>
@@ -18,9 +18,6 @@
       {% endif %}
       <div class="card-content">
         <h3>{{ entry.title }}</h3>
-        {% if user and entry.is_hidden %}
-        <span class="visibility-badge">Oculto</span>
-        {% endif %}
         {% if entry.celebration_at_display %}
         <p class="card-meta">{{ entry.celebration_at_display }}</p>
         {% endif %}
@@ -42,9 +39,6 @@
     <article class="blog-item">
       <div>
         <h3>{{ entry.title }}</h3>
-        {% if user and entry.is_hidden %}
-        <span class="visibility-badge">Oculto</span>
-        {% endif %}
         {% if entry.celebration_at_display %}
         <p class="card-meta">{{ entry.celebration_at_display }}</p>
         {% endif %}
@@ -74,4 +68,36 @@
     {% endif %}
   </div>
 </section>
+
+{% if draft_entries %}
+<section class="section container reveal">
+  <h2>Borradores</h2>
+  <div class="blog-list">
+    {% for entry in draft_entries %}
+    <article class="blog-item">
+      <div>
+        <h3>{{ entry.title }}</h3>
+        <span class="visibility-badge">Oculto</span>
+        {% if entry.celebration_at_display %}
+        <p class="card-meta">{{ entry.celebration_at_display }}</p>
+        {% endif %}
+        <p>{{ entry.summary }}</p>
+      </div>
+      <div class="actions">
+        <a class="button ghost" href="/actividades/{{ entry._id }}">Ver</a>
+        {% if can_manage_drafts %}
+        <a class="button ghost" href="/actividades/{{ entry._id }}/editar">Editar</a>
+        <form method="post" action="/actividades/{{ entry._id }}/publicar">
+          <button class="button ghost" type="submit">Publicar</button>
+        </form>
+        <form method="post" action="/actividades/{{ entry._id }}/eliminar" onsubmit="return confirm('¿Seguro que quieres eliminar esta actividad?');">
+          <button class="button ghost" type="submit">Eliminar</button>
+        </form>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

@@ -30,6 +30,9 @@
       <img src="{{ photo.image_url }}" alt="{{ photo.name }}" />
       <div class="photo-info">
         <h3>{{ photo.name }}</h3>
+        {% if user and photo.is_hidden %}
+        <span class="visibility-badge">Oculto</span>
+        {% endif %}
         <div class="photo-info__meta">
           <p>{{ photo.author }}</p>
           <span>{{ photo.uploaded_at_display }}</span>
@@ -51,7 +54,7 @@
   <div class="astrofoto-pagination" data-astrofoto-pagination></div>
 </section>
 
-{% if user and user.permissions.photos %}
+{% if user and (user.permissions.photos or user.permissions.photos_supervised) %}
 <section class="section container reveal">
   <div class="section-header">
     <h2>Subir nuevas imágenes</h2>
@@ -65,11 +68,10 @@
           <input type="text" name="name" required />
         </label>
         <label>Características
-          <input type="text" name="characteristics" />
-          <span class="muted">Tiempo de exposición, filtros...</span>
+          <textarea name="characteristics" rows="3"></textarea>
         </label>
         <label>Equipo usado
-          <input type="text" name="equipment" />
+          <textarea name="equipment" rows="3"></textarea>
         </label>
         <label>Descripción
           <textarea name="description" rows="3"></textarea>
@@ -88,7 +90,12 @@
           <p class="muted">Puedes añadir versiones alternativas con su propia descripción.</p>
           <div class="astrofoto-versions__list" data-astrofoto-versions-list></div>
         </div>
-        <button class="button" type="submit">Subir foto</button>
+        <div class="form-actions">
+          {% if user.permissions.photos %}
+          <button class="button" type="submit" name="submission_action" value="publish">Publicar foto</button>
+          {% endif %}
+          <button class="button ghost" type="submit" name="submission_action" value="review">Enviar para revisión</button>
+        </div>
       </form>
     </div>
   </div>

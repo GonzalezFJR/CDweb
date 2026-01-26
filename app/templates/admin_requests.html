@@ -30,28 +30,59 @@
 <section class="section container reveal">
   <h2>Usuarios registrados</h2>
   <div class="table">
-    <div class="table-row table-header">
+    <div class="table-row table-header users-table">
       <span>Email</span>
       <span>Permisos</span>
       <span>Acciones</span>
     </div>
     {% for registered_user in users %}
-    <div class="table-row">
+    <div class="table-row users-table">
       <span>{{ registered_user.email }}</span>
-      <span class="actions">
-        <form method="post" action="/admin/usuarios/{{ registered_user._id }}/permisos">
-          <label class="checkbox">
-            <input type="checkbox" name="photos" {% if registered_user.permissions.photos %}checked{% endif %} />
-            Astrofotos
-          </label>
-          <label class="checkbox">
-            <input type="checkbox" name="blog" {% if registered_user.permissions.blog %}checked{% endif %} />
-            Blog
-          </label>
-          <label class="checkbox">
-            <input type="checkbox" name="activities" {% if registered_user.permissions.activities %}checked{% endif %} />
-            Actividades
-          </label>
+      <span>
+        <div class="permissions-grid permissions-grid--header">
+          <span>Astrofotografías</span>
+          <span>Blog</span>
+          <span>Actividades</span>
+        </div>
+        <form class="permissions-form" method="post" action="/admin/usuarios/{{ registered_user._id }}/permisos">
+          <div class="permissions-grid">
+            <div class="permissions-column">
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="photos_supervised" {% if registered_user.permissions.photos_supervised %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Publicar para revisión</span>
+              </label>
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="photos" {% if registered_user.permissions.photos %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Administrar</span>
+              </label>
+            </div>
+            <div class="permissions-column">
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="blog_supervised" {% if registered_user.permissions.blog_supervised %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Publicar para revisión</span>
+              </label>
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="blog" {% if registered_user.permissions.blog %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Administrar</span>
+              </label>
+            </div>
+            <div class="permissions-column">
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="activities_supervised" {% if registered_user.permissions.activities_supervised %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Publicar para revisión</span>
+              </label>
+              <label class="rich-editor__switch permissions-switch">
+                <input type="checkbox" class="rich-editor__toggle-input" name="activities" {% if registered_user.permissions.activities %}checked{% endif %} />
+                <span class="rich-editor__switch-slider"></span>
+                <span class="rich-editor__switch-text">Administrar</span>
+              </label>
+            </div>
+          </div>
           <button class="button ghost small" type="submit">Guardar</button>
         </form>
       </span>
