@@ -486,7 +486,7 @@ async def associate(request: Request) -> Any:
 async def associate_submit(
     request: Request,
     full_name: str = Form(...),
-    dni: str = Form(...),
+    dni: str | None = Form(None),
     email: str = Form(...),
     phone: str | None = Form(None),
     city: str | None = Form(None),
