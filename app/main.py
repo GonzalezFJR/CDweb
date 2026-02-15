@@ -32,7 +32,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-CONSTRUCTION_IMAGE_URL = "/static/store/page/1768922588.118187_en_construccion_img.png"
+CONSTRUCTION_IMAGE_URL = "/static/store/page/1768922588.118187_en_construccion_img.jpg"
 CONSTRUCTION_ALLOWED_PATHS = {"/login", "/registro", "/registro/gracias"}
 
 PERMISSION_KEYS = (
