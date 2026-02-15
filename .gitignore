@@ -4,3 +4,8 @@ app/static/pics/
 app/static/store/blog/
 app/static/store/pics/
 app/static/store/activities/
+
+temp*
+
+*_orig.png
+*_orig.jpg
