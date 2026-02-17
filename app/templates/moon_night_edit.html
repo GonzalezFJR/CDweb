@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <h1>Editar Noche Lunática</h1>
+  <form class="form" method="post" action="/noche_lunatica/editar">
+    <label>Título de la sección A
+      <input type="text" name="section_a_title" value="{{ content.section_a_title }}" required />
+    </label>
+    <label>Texto de la sección A
+      <textarea name="section_a_text" rows="5" required>{{ content.section_a_text }}</textarea>
+    </label>
+    <label class="rich-editor__switch">
+      <input type="checkbox" class="rich-editor__toggle-input" name="section_a_visible" {% if content.section_a_visible %}checked{% endif %} />
+      <span class="rich-editor__switch-slider"></span>
+      <span class="rich-editor__switch-text">Mostrar sección A en la vista pública</span>
+    </label>
+    <label>Próxima actividad (sección A)
+      <select name="section_a_activity_id">
+        <option value="">Sin actividad seleccionada</option>
+        {% for activity in activities %}
+        <option value="{{ activity._id }}" {% if content.section_a_activity_id == activity._id %}selected{% endif %}>{{ activity.title }}{% if activity.celebration_at_display %} — {{ activity.celebration_at_display }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Actividades para sección B (Ediciones anteriores)
+      <select name="section_b_activity_ids" multiple size="10" class="multi-select">
+        {% for activity in activities %}
+        <option value="{{ activity._id }}" {% if activity._id in content.section_b_activity_ids %}selected{% endif %}>{{ activity.title }}{% if activity.celebration_at_display %} — {{ activity.celebration_at_display }}{% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <p class="muted">Tip: usa Ctrl/Cmd + click para seleccionar varias actividades y su orden se mantendrá en la galería.</p>
+    <button class="button" type="submit">Guardar cambios</button>
+  </form>
+</section>
+{% endblock %}

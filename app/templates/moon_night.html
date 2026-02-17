@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section container reveal">
+  <div class="page-heading">
+    <h1>Noche Lunática</h1>
+    <p class="muted">International Observe the Moon Night</p>
+    {% if can_edit %}
+    <a class="button ghost" href="/noche_lunatica/editar">Editar contenido</a>
+    {% endif %}
+  </div>
+  <p>
+    La <strong>International Observe the Moon Night</strong> es una iniciativa impulsada por la NASA para acercar la observación de la Luna y la divulgación científica al público general. En Cielos Despejados celebramos cada edición en los jardines de la Facultad de Ciencias de la Universidad de Oviedo con una jornada abierta que combina charlas científicas, observación lunar con telescopios y diferentes talleres para todos los públicos.
+  </p>
+</section>
+
+{% if section_a_visible %}
+<section class="section container reveal">
+  <div class="section-text">
+    <h2>{{ section_a_title }}</h2>
+    <p>{{ section_a_text }}</p>
+  </div>
+  {% if section_a_activity %}
+  <div class="cards cards--three">
+    <article class="card">
+      {% if section_a_activity.image_url and section_a_activity.show_image %}
+      <img src="{{ section_a_activity.image_url }}" alt="{{ section_a_activity.title }}" />
+      {% endif %}
+      <div class="card-content">
+        <h3>{{ section_a_activity.title }}</h3>
+        {% if section_a_activity.celebration_at_display %}
+        <p class="card-meta">{{ section_a_activity.celebration_at_display }}</p>
+        {% endif %}
+        <p>{{ section_a_activity.summary }}</p>
+        <a class="button ghost" href="/actividades/{{ section_a_activity._id }}">Ver más</a>
+      </div>
+    </article>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="section container reveal">
+  <div class="section-text">
+    <h2>Ediciones anteriores</h2>
+    <p>Galería de actividades pasadas de la Noche Lunática.</p>
+  </div>
+  <div class="cards cards--three">
+    {% for activity in section_b_activities %}
+    <article class="card">
+      {% if activity.image_url and activity.show_image %}
+      <img src="{{ activity.image_url }}" alt="{{ activity.title }}" />
+      {% endif %}
+      <div class="card-content">
+        <h3>{{ activity.title }}</h3>
+        {% if activity.celebration_at_display %}
+        <p class="card-meta">{{ activity.celebration_at_display }}</p>
+        {% endif %}
+        <p>{{ activity.summary }}</p>
+        <a class="button ghost" href="/actividades/{{ activity._id }}">Ver más</a>
+      </div>
+    </article>
+    {% else %}
+    <article class="card placeholder-card">
+      <div class="placeholder-thumb"></div>
+      <div class="card-content">
+        <h3>Sin ediciones seleccionadas</h3>
+        <p>Pronto mostraremos aquí las actividades de años anteriores.</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

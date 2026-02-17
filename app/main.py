@@ -84,6 +84,7 @@ SPANISH_MONTHS = {
 }
 
 ABOUT_PAGE_SLUG = "sobre-nosotros"
+MOON_NIGHT_PAGE_SLUG = "noche-lunatica"
 DEFAULT_ABOUT_HTML = """
 <h1>Sobre nosotros</h1>
 <p>
@@ -148,6 +149,15 @@ DEFAULT_ABOUT_HTML = """
 </ul>
 <p><br>¿Te interesa unirte a nosotros? <a class="inline-link" href="/asociate">Hazte socio aquí.</a></p>
 """.strip()
+
+DEFAULT_MOON_NIGHT_CONTENT: dict[str, Any] = {
+    "section_a_title": "Próxima edición",
+    "section_a_text": ""
+    """Estamos preparando una nueva edición de la Noche Lunática con actividades divulgativas para todos los públicos. Muy pronto anunciaremos la fecha y el programa completo.""",
+    "section_a_visible": True,
+    "section_a_activity_id": "",
+    "section_b_activity_ids": [],
+}
 
 
 @app.on_event("startup")
@@ -245,6 +255,36 @@ async def _fetch_about_content() -> str:
     if document and document.get("content_html"):
         return document["content_html"]
     return DEFAULT_ABOUT_HTML
+
+
+async def _fetch_moon_night_content() -> dict[str, Any]:
+    document = await db.page_content.find_one({"slug": MOON_NIGHT_PAGE_SLUG})
+    if not document:
+        return dict(DEFAULT_MOON_NIGHT_CONTENT)
+    return {
+        "section_a_title": (document.get("section_a_title") or DEFAULT_MOON_NIGHT_CONTENT["section_a_title"]).strip(),
+        "section_a_text": (document.get("section_a_text") or DEFAULT_MOON_NIGHT_CONTENT["section_a_text"]).strip(),
+        "section_a_visible": bool(document.get("section_a_visible", True)),
+        "section_a_activity_id": str(document.get("section_a_activity_id") or ""),
+        "section_b_activity_ids": [str(activity_id) for activity_id in document.get("section_b_activity_ids") or []],
+    }
+
+
+async def _fetch_activities_by_ids(
+    activity_ids: list[str],
+    *,
+    include_hidden: bool = False,
+) -> list[dict[str, Any]]:
+    if not activity_ids:
+        return []
+    filters: dict[str, Any] = {"_id": {"$in": activity_ids}}
+    if not include_hidden:
+        filters.update(_publication_filter(False))
+    activity_map: dict[str, dict[str, Any]] = {}
+    async for activity in db.activities.find(filters):
+        serialized = _prepare_publication_entry(activity)
+        activity_map[serialized["_id"]] = serialized
+    return [activity_map[activity_id] for activity_id in activity_ids if activity_id in activity_map]
 
 
 def _publication_filter(include_hidden: bool) -> dict[str, Any]:
@@ -446,6 +486,108 @@ async def index(request: Request, user: dict | None = Depends(get_current_user))
         "user": user,
     }
     return templates.TemplateResponse("index.html", context)
+
+
+@app.get("/noche_lunatica")
+async def moon_night(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
+    content = await _fetch_moon_night_content()
+    include_hidden = bool(user and _has_permission(user, "activities"))
+    section_a_activity_id = content.get("section_a_activity_id", "")
+    section_a_activity = None
+    if section_a_activity_id:
+        activities = await _fetch_activities_by_ids(
+            [section_a_activity_id], include_hidden=include_hidden
+        )
+        section_a_activity = activities[0] if activities else None
+    section_b_activities = await _fetch_activities_by_ids(
+        content.get("section_b_activity_ids", []), include_hidden=include_hidden
+    )
+    can_edit = bool(user and _has_permission(user, "activities"))
+    return templates.TemplateResponse(
+        "moon_night.html",
+        {
+            "request": request,
+            "user": user,
+            "can_edit": can_edit,
+            "section_a_title": content.get("section_a_title", ""),
+            "section_a_text": content.get("section_a_text", ""),
+            "section_a_visible": bool(content.get("section_a_visible", True)),
+            "section_a_activity": section_a_activity,
+            "section_b_activities": section_b_activities,
+        },
+    )
+
+
+@app.get("/noche_lunatica/editar")
+async def moon_night_edit(request: Request, user: dict | None = Depends(get_current_user)) -> Any:
+    if not user or not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
+    content = await _fetch_moon_night_content()
+    activities_cursor = db.activities.find({}).sort("celebration_at", -1)
+    all_activities = [_prepare_publication_entry(activity) async for activity in activities_cursor]
+    return templates.TemplateResponse(
+        "moon_night_edit.html",
+        {
+            "request": request,
+            "user": user,
+            "content": content,
+            "activities": all_activities,
+        },
+    )
+
+
+@app.post("/noche_lunatica/editar")
+async def moon_night_edit_submit(
+    section_a_title: str = Form(...),
+    section_a_text: str = Form(...),
+    section_a_visible: str | None = Form(None),
+    section_a_activity_id: str | None = Form(None),
+    section_b_activity_ids: list[str] = Form(default=[]),
+    user: dict | None = Depends(get_current_user),
+) -> Any:
+    if not user or not _has_permission(user, "activities"):
+        raise HTTPException(status_code=403)
+    cleaned_title = section_a_title.strip()
+    cleaned_text = section_a_text.strip()
+    if not cleaned_title:
+        raise HTTPException(status_code=400, detail="El título de la sección A es obligatorio.")
+    if not cleaned_text:
+        raise HTTPException(status_code=400, detail="El texto de la sección A es obligatorio.")
+    section_a_activity_id = (section_a_activity_id or "").strip()
+    if section_a_activity_id:
+        activity_exists = await db.activities.find_one({"_id": section_a_activity_id})
+        if not activity_exists:
+            raise HTTPException(status_code=400, detail="La actividad de la sección A no existe.")
+    unique_section_b_ids = [
+        activity_id
+        for index, activity_id in enumerate(section_b_activity_ids)
+        if activity_id and activity_id not in section_b_activity_ids[:index]
+    ]
+    if unique_section_b_ids:
+        existing_count = await db.activities.count_documents(
+            {"_id": {"$in": unique_section_b_ids}}
+        )
+        if existing_count != len(unique_section_b_ids):
+            raise HTTPException(
+                status_code=400,
+                detail="Hay actividades seleccionadas en la sección B que no existen.",
+            )
+    await db.page_content.update_one(
+        {"slug": MOON_NIGHT_PAGE_SLUG},
+        {
+            "$set": {
+                "slug": MOON_NIGHT_PAGE_SLUG,
+                "section_a_title": cleaned_title,
+                "section_a_text": cleaned_text,
+                "section_a_visible": section_a_visible == "on",
+                "section_a_activity_id": section_a_activity_id,
+                "section_b_activity_ids": unique_section_b_ids,
+                "updated_at": datetime.utcnow(),
+            }
+        },
+        upsert=True,
+    )
+    return RedirectResponse("/noche_lunatica", status_code=303)
 
 
 @app.get("/sobre-nosotros")
