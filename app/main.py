@@ -32,9 +32,6 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-CONSTRUCTION_IMAGE_URL = "/static/store/page/1768922588.118187_en_construccion_img.jpg"
-CONSTRUCTION_ALLOWED_PATHS = {"/login", "/registro", "/registro/gracias"}
-
 PERMISSION_KEYS = (
     "photos",
     "blog",
@@ -49,21 +46,6 @@ SUPERVISED_PERMISSION_MAP = {
     "blog": "blog_supervised",
     "activities": "activities_supervised",
 }
-
-
-@app.middleware("http")
-async def construction_guard(request: Request, call_next: Any) -> Any:
-    path = request.url.path
-    if path.startswith("/static") or path == "/favicon.ico":
-        return await call_next(request)
-    if request.session.get("user_email"):
-        return await call_next(request)
-    if path in CONSTRUCTION_ALLOWED_PATHS:
-        return await call_next(request)
-    return templates.TemplateResponse(
-        "construction.html",
-        {"request": request, "image_url": CONSTRUCTION_IMAGE_URL},
-    )
 
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
