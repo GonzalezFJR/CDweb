@@ -149,6 +149,7 @@ async def startup() -> None:
 
 
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+_turnstile_client = httpx.AsyncClient()
 
 
 async def _verify_turnstile(token: str) -> bool:
@@ -156,11 +157,10 @@ async def _verify_turnstile(token: str) -> bool:
         return True
     if not token:
         return False
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            TURNSTILE_VERIFY_URL,
-            data={"secret": settings.captcha_secret_key, "response": token},
-        )
+    resp = await _turnstile_client.post(
+        TURNSTILE_VERIFY_URL,
+        data={"secret": settings.captcha_secret_key, "response": token},
+    )
     result = resp.json()
     return result.get("success", False)
 
