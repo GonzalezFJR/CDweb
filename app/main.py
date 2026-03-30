@@ -4,6 +4,8 @@ from pathlib import Path
 from random import choice
 from typing import Any
 
+import httpx
+
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exception_handlers import http_exception_handler as fastapi_http_exception_handler
 from fastapi.responses import RedirectResponse
@@ -144,6 +146,23 @@ DEFAULT_MOON_NIGHT_CONTENT: dict[str, Any] = {
 @app.on_event("startup")
 async def startup() -> None:
     await ensure_indexes()
+
+
+TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+
+async def _verify_turnstile(token: str) -> bool:
+    if not settings.captcha_secret_key:
+        return True
+    if not token:
+        return False
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            TURNSTILE_VERIFY_URL,
+            data={"secret": settings.captcha_secret_key, "response": token},
+        )
+    result = resp.json()
+    return result.get("success", False)
 
 
 async def get_current_user(request: Request) -> dict | None:
@@ -601,7 +620,11 @@ async def about_update(
 async def associate(request: Request) -> Any:
     return templates.TemplateResponse(
         "associate.html",
-        {"request": request, "contact_email": settings.contact_email},
+        {
+            "request": request,
+            "contact_email": settings.contact_email,
+            "captcha_site_key": settings.captcha_site_key,
+        },
     )
 
 
@@ -618,6 +641,18 @@ async def associate_submit(
     payment_receipt: UploadFile | None = File(None),
     data_policy: bool = Form(...),
 ) -> Any:
+    form_data = await request.form()
+    token = form_data.get("cf-turnstile-response", "")
+    if not await _verify_turnstile(token):
+        return templates.TemplateResponse(
+            "associate.html",
+            {
+                "request": request,
+                "contact_email": settings.contact_email,
+                "captcha_site_key": settings.captcha_site_key,
+                "captcha_error": True,
+            },
+        )
     payload = {
         "full_name": full_name,
         "dni": dni,
@@ -669,6 +704,7 @@ async def associate_submit(
         {
             "request": request,
             "contact_email": settings.contact_email,
+            "captcha_site_key": settings.captcha_site_key,
             "success": True,
         },
     )
@@ -1387,7 +1423,10 @@ async def activities_publish(
 
 @app.get("/contacto")
 async def contact(request: Request) -> Any:
-    return templates.TemplateResponse("contact.html", {"request": request})
+    return templates.TemplateResponse(
+        "contact.html",
+        {"request": request, "captcha_site_key": settings.captcha_site_key},
+    )
 
 
 @app.get("/perfil")
@@ -1660,12 +1699,26 @@ async def contact_submit(
     email: str = Form(...),
     message: str = Form(...),
 ) -> Any:
+    form_data = await request.form()
+    token = form_data.get("cf-turnstile-response", "")
+    if not await _verify_turnstile(token):
+        return templates.TemplateResponse(
+            "contact.html",
+            {
+                "request": request,
+                "captcha_site_key": settings.captcha_site_key,
+                "captcha_error": True,
+            },
+        )
     send_email(
         "Nuevo mensaje de contacto",
         f"Mensaje de {name} ({email}):\n\n{message}",
         settings.contact_email,
     )
-    return templates.TemplateResponse("contact.html", {"request": request, "success": True})
+    return templates.TemplateResponse(
+        "contact.html",
+        {"request": request, "captcha_site_key": settings.captcha_site_key, "success": True},
+    )
 
 
 @app.get("/login")

@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endblock %}
+
 {% block content %}
 <section class="section container reveal">
   <h1>Contacto</h1>
@@ -11,6 +15,9 @@
       {% if success %}
       <div class="alert success">Mensaje enviado correctamente.</div>
       {% endif %}
+      {% if captcha_error %}
+      <div class="alert error">Por favor, completa la verificación de seguridad.</div>
+      {% endif %}
       <form class="form" method="post">
         <label>Nombre
           <input type="text" name="name" required />
@@ -21,6 +28,7 @@
         <label>Mensaje
           <textarea name="message" rows="5" required></textarea>
         </label>
+        <div class="cf-turnstile" data-sitekey="{{ captcha_site_key }}"></div>
         <button class="button" type="submit">Enviar</button>
       </form>
     </div>

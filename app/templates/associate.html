@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endblock %}
+
 {% block content %}
 <section class="section container reveal">
   <h1>Únete a nosotros</h1>
@@ -10,6 +14,9 @@
   </p>
   {% if success %}
   <div class="alert success">Solicitud enviada correctamente. ¡Gracias por tu interés!</div>
+  {% endif %}
+  {% if captcha_error %}
+  <div class="alert error">Por favor, completa la verificación de seguridad.</div>
   {% endif %}
   <form class="form" method="post" enctype="multipart/form-data">
     <label>Nombre y apellidos*
@@ -48,6 +55,7 @@
         Acepto la política de protección de datos †
       </span>
     </label>
+    <div class="cf-turnstile" data-sitekey="{{ captcha_site_key }}"></div>
     <button class="button" type="submit">Enviar solicitud</button>
   </form>
   <div class="policy-box">
