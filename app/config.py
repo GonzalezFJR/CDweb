@@ -14,7 +14,8 @@ class Settings:
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
     smtp_from: str = os.getenv("SMTP_FROM", "noreply@cielosdespejados.es")
     admin_email: str = os.getenv("ADMIN_EMAIL", "")
-    admin_password: str = os.getenv("ADMIN_PASSWORD", "")    captcha_site_key:   str = os.getenv("CAPTCHA_SITE_KEY", "")
+    admin_password: str = os.getenv("ADMIN_PASSWORD", "")    
+    captcha_site_key:   str = os.getenv("CAPTCHA_SITE_KEY", "")
     captcha_secret_key: str = os.getenv("CAPTCHA_SECRET_KEY", "")
 
 settings = Settings()
