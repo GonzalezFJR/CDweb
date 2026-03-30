@@ -644,9 +644,24 @@ async def associate_submit(
             )
         )
     await db.membership_requests.insert_one(payload)
+    body = (
+        "Se ha recibido una nueva solicitud de asociación.\n\n"
+        f"Nombre y apellidos: {full_name}\n"
+        f"DNI / NIF: {dni or 'No indicado'}\n"
+        f"Email: {email}\n"
+        f"Número de teléfono: {phone or 'No indicado'}\n"
+        f"¿Dónde vives?: {city or 'No indicado'}\n\n"
+        f"¿Qué te gusta más de la astronomía? ¿Qué buscas en Cielos Despejados?:\n"
+        f"{interests or 'No indicado'}\n\n"
+        f"¿Tienes telescopio? ¿Sabes utilizarlo o quieres aprender? "
+        f"¿Sabes de astrofotografía? Cuéntanos sobre tu experiencia y tus expectativas:\n"
+        f"{experience or 'No indicado'}\n\n"
+        f"Justificante de pago: {'Adjunto (' + payment_receipt.filename + ')' if payment_receipt and payment_receipt.filename else 'No adjuntado'}\n"
+        f"Acepta la política de protección de datos: Sí\n"
+    )
     send_email(
         "Nueva solicitud de asociación",
-        f"Se ha recibido una solicitud de {full_name} ({email}).",
+        body,
         settings.contact_email,
         attachments=attachments,
     )
