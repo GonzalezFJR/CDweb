@@ -116,13 +116,12 @@ DEFAULT_ABOUT_HTML = """
   </div>
 </div>
 <div class="about-spacer"></div>
-<p>Tras la asamblea de febrero de 2024 la Junta Directiva está formada por:</p>
+<p>Tras la asamblea de marzo de 2026 la Junta Directiva está formada por:</p>
 <ul class="about-list">
   <li>Marcos Suárez, presidente</li>
   <li>María Fernández, vicepresidente</li>
   <li>Julia Menéndez, secretaria/tesorera</li>
   <li>Laura Hermosa, vocal</li>
-  <li>Juan F. García, vocal</li>
 </ul>
 <p><br>La asociación está inscrita en:</p>
 <ul class="about-list">
